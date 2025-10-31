@@ -1,0 +1,50 @@
+.table-container {
+    overflow-x: auto;
+    padding: 1rem;
+    font-family: "Inter", sans-serif;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.custom-table {
+    width: 100%;
+    min-width: 100%;
+    border: 1px solid #d1d5db;
+    /* gray-300 */
+    border-collapse: collapse;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+thead {
+    font-size: 16px;
+    height: 56px;
+    /* separa visualmente o título dos dados */
+}
+
+tbody tr:first-child td {
+    padding-top: 10px;
+    /* dá uma folguinha extra no início dos dados */
+}
+
+tr {
+    height: 84px;
+}
+
+/* Células da tabela */
+.custom-table th,
+.custom-table td {
+    padding: 0.5rem 1rem;
+    text-align: center;
+}
+
+/* Linhas pares com fundo cinza claro */
+.custom-table tbody tr:nth-child(even) {
+    background-color: #F4F4F4;
+}
+
+/* Hover em qualquer linha */
+.custom-table tbody tr:hover {
+    background-color: #DDDDDD;
+    transition: background-color 0.2s ease;
+}

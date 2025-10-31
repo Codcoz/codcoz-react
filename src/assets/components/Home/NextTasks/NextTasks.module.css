@@ -1,0 +1,10 @@
+.next-tasks {
+    /* flex: 0 1 611px; */
+    /* max-width: 611px; */
+    /* min-width: 140px; */
+    height: 243px;
+    width: 100%;
+    background-color: white;
+
+    border-radius: 8px;
+}
