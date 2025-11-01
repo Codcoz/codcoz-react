@@ -15,7 +15,7 @@ export default defineConfig({
       },
       // Proxy para API MongoDB
       '/api/mongo': {
-        target: 'https://codcoz-api-mongo.onrender.com',
+        target: 'https://codcoz-api-mongo-eemr.onrender.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/mongo/, ''),
         secure: true,
