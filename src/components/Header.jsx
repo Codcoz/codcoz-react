@@ -185,7 +185,7 @@ export default function Header({
                   </Button>
 
                   <Button
-                    className="w-full bg-transparent hover:bg-[#ebebeb] text-[#333333] border border-[#ebebeb]"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white border border-red-600 hover:border-red-700 transition-colors"
                     onClick={() => {
                       setShowUserDropdown(false);
                       if (onLogout) {

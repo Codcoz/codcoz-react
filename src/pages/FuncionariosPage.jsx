@@ -193,9 +193,9 @@ export default function FuncionariosPage({ empresaId }) {
               Nenhum funcionário cadastrado ainda.
             </p>
           ) : (
-            funcionarios.map((func) => (
+            funcionarios.map((func, index) => (
               <div
-                key={func.id}
+                key={func.id || `func-${index}`}
                 className="flex items-center justify-between p-4 border border-[#ebebeb] rounded-lg"
               >
                 <div>

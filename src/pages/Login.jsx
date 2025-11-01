@@ -17,23 +17,25 @@ export default function Login({ onLogin }) {
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, senha);
-      sessionStorage.setItem("userEmail", userCred.user.email);
+      setEmail("");
+      setSenha("");
+      // A autenticação será gerenciada pelo onAuthStateChanged no App.jsx
       toast.success("Login realizado com sucesso!");
       if (onLogin) onLogin(userCred.user.email);
-      window.location.reload();
     } catch (error) {
-      if (error.code === "auth/user-not-found") {
-        toast.error("Usuário não encontrado");
-      } else if (error.code === "auth/wrong-password") {
-        toast.error("Senha incorreta");
-      } else if (error.code === "auth/invalid-email") {
+      if (error.code === "auth/invalid-email") {
         toast.error("Email inválido");
-      } else if (error.code === "auth/invalid-credential") {
-        toast.error("Email ou senha incorretos");
       } else if (error.code === "auth/too-many-requests") {
         toast.error("Muitas tentativas. Tente novamente mais tarde");
+      } else if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        // Mensagem genérica para erros de credenciais
+        toast.error("Email ou senha incorretos");
       } else {
-        toast.error(error.message || "Erro ao fazer login");
+        toast.error("Erro ao fazer login. Tente novamente.");
       }
     } finally {
       setLoading(false);
@@ -52,7 +54,9 @@ export default function Login({ onLogin }) {
               />
             </svg>
           </div>
-          <h1 className="text-[#002a45] text-xl font-semibold">CodCoz - Sistema de Gestão</h1>
+          <h1 className="text-[#002a45] text-xl font-semibold">
+            CodCoz - Sistema de Gestão
+          </h1>
           <p className="text-[#666666] mt-2 text-sm">Login para Gestores</p>
         </div>
 
