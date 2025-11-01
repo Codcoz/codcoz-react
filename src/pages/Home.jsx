@@ -3,7 +3,7 @@ import { Card } from "../components/ui/Card";
 import { postgresAPI } from "../lib/api";
 import { Package, TrendingUp, AlertTriangle, DollarSign, Clock, Activity } from "lucide-react";
 
-export default function Home({ empresaId }) {
+export default function Home({ empresaId, onNavigate }) {
   const [stats, setStats] = useState({
     entradaItens: 240,
     saidaItens: 190,
@@ -13,6 +13,18 @@ export default function Home({ empresaId }) {
     produtosProximoVencimento: 0,
     produtosEstoqueBaixo: 0,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleImportClick = () => {
+    document.getElementById('xml-file-input').click();
+  };
 
   useEffect(() => {
     fetchStats();
@@ -20,20 +32,27 @@ export default function Home({ empresaId }) {
 
   const fetchStats = async () => {
     try {
-      const [quantidadeEstoque, proximoValidade, estoqueBaixo] = await Promise.all([
+      const [quantidadeEstoque, proximoValidade, estoqueBaixo, entradas, saidas] = await Promise.all([
         postgresAPI.getProductStockQuantity(empresaId),
         postgresAPI.getProductsNearExpiration(empresaId),
         postgresAPI.getProductsLowStock(empresaId),
+        postgresAPI.listEntryMovements(empresaId).catch(() => []),
+        postgresAPI.listExitMovements(empresaId).catch(() => []),
       ]);
+
+      const totalEntradas = entradas.reduce((sum, mov) => sum + (mov.diferenca || 0), 0);
+      const totalSaidas = saidas.reduce((sum, mov) => sum + Math.abs(mov.diferenca || 0), 0);
 
       setStats(prev => ({
         ...prev,
+        entradaItens: totalEntradas,
+        saidaItens: totalSaidas,
         produtosEstoque: quantidadeEstoque || 0,
         produtosProximoVencimento: proximoValidade || 0,
         produtosEstoqueBaixo: estoqueBaixo || 0,
       }));
-    } catch (error) {
-      console.warn("Erro ao buscar estatísticas:", error);
+    } catch {
+      // Ignora erros de API
     }
   };
 
@@ -104,9 +123,24 @@ export default function Home({ empresaId }) {
               Importe os arquivos XML recebidos de fornecedores para manter o controle
               atualizado de todas as notas fiscais.
             </p>
-            <button className="bg-[#002a45] text-white px-6 py-2 rounded-md hover:bg-[#003a5f] transition-colors">
+            <input
+              type="file"
+              id="xml-file-input"
+              accept=".xml"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <button 
+              onClick={handleImportClick}
+              className="bg-[#002a45] text-white px-6 py-2 rounded-md hover:bg-[#003a5f] transition-colors"
+            >
               Importar
             </button>
+            {selectedFile && (
+              <p className="mt-3 text-sm text-[#666666]">
+                Arquivo selecionado: {selectedFile.name}
+              </p>
+            )}
           </Card>
 
           {/* Recent Activities */}
@@ -152,24 +186,70 @@ export default function Home({ empresaId }) {
           <Card className="p-6">
             <h2 className="text-[#333333] mb-4 font-semibold">Links rápidos</h2>
             <div className="space-y-3">
-              {[
-                "Criar Produto",
-                "Importar XML",
-                "Marcar Auditoria",
-                "Visualizar Relatórios",
-                "Falar com ChefIA",
-              ].map((link, i) => (
-                <div key={i}>
-                  <button className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Activity className="w-4 h-4 text-[#444444]" />
-                      <span>{link}</span>
-                    </div>
-                    <span className="text-[#555555]">›</span>
-                  </button>
-                  {i < 4 && <div className="border-t border-[#ebebeb] my-1" />}
-                </div>
-              ))}
+              <div>
+                <button 
+                  onClick={() => onNavigate?.('produtos')}
+                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#444444]" />
+                    <span>Criar Produto</span>
+                  </div>
+                  <span className="text-[#555555]">›</span>
+                </button>
+                <div className="border-t border-[#ebebeb] my-1" />
+              </div>
+              <div>
+                <button 
+                  onClick={() => onNavigate?.('xml')}
+                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#444444]" />
+                    <span>Importar XML</span>
+                  </div>
+                  <span className="text-[#555555]">›</span>
+                </button>
+                <div className="border-t border-[#ebebeb] my-1" />
+              </div>
+              <div>
+                <button 
+                  onClick={() => onNavigate?.('pedidos')}
+                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#444444]" />
+                    <span>Marcar Auditoria</span>
+                  </div>
+                  <span className="text-[#555555]">›</span>
+                </button>
+                <div className="border-t border-[#ebebeb] my-1" />
+              </div>
+              <div>
+                <button 
+                  onClick={() => onNavigate?.('relatorios')}
+                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#444444]" />
+                    <span>Visualizar Relatórios</span>
+                  </div>
+                  <span className="text-[#555555]">›</span>
+                </button>
+                <div className="border-t border-[#ebebeb] my-1" />
+              </div>
+              <div>
+                <button 
+                  onClick={() => {/* Chatbot já está visível */}}
+                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-[#444444]" />
+                    <span>Falar com ChefIA</span>
+                  </div>
+                  <span className="text-[#555555]">›</span>
+                </button>
+              </div>
             </div>
           </Card>
         </div>

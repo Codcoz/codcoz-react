@@ -1,17 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/Dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, UserX } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { postgresAPI } from "../lib/api";
 
 export default function FuncionariosPage({ empresaId }) {
   const [funcionarios, setFuncionarios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     nome: "",
     sobrenome: "",
@@ -20,47 +27,101 @@ export default function FuncionariosPage({ empresaId }) {
     status: "ATIVO",
   });
 
-  useEffect(() => {
-    // TODO: Implementar busca de funcionários quando API estiver disponível
+  const fetchFuncionarios = useCallback(async () => {
+    try {
+      const data = await postgresAPI.listEmployees(empresaId);
+      setFuncionarios(data);
+    } catch {
+      setFuncionarios([]);
+    }
   }, [empresaId]);
+
+  useEffect(() => {
+    fetchFuncionarios();
+  }, [fetchFuncionarios]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await postgresAPI.createEmployee({
-        ...formData,
-        empresaId,
-        dataContratacao: new Date().toISOString().split("T")[0],
-      });
+      if (editingId) {
+        await postgresAPI.updateEmployee(editingId, {
+          ...formData,
+          empresaId,
+        });
+        toast.success("Funcionário atualizado com sucesso!");
+      } else {
+        await postgresAPI.createEmployee({
+          ...formData,
+          empresaId,
+          dataContratacao: new Date().toISOString().split("T")[0],
+        });
+        toast.success("Funcionário cadastrado com sucesso!");
+      }
 
-      toast.success("Funcionário cadastrado com sucesso!");
       setDialogOpen(false);
-      setFormData({ nome: "", sobrenome: "", email: "", funcaoId: 1, status: "ATIVO" });
-    } catch (error) {
-      toast.error("Erro ao cadastrar funcionário");
+      setFormData({
+        nome: "",
+        sobrenome: "",
+        email: "",
+        funcaoId: 1,
+        status: "ATIVO",
+      });
+      setEditingId(null);
+      fetchFuncionarios();
+    } catch {
+      toast.error(
+        editingId
+          ? "Erro ao atualizar funcionário"
+          : "Erro ao cadastrar funcionário"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemitir = async (email) => {
+  const handleDemitir = async (id) => {
     if (!confirm("Tem certeza que deseja demitir este funcionário?")) return;
 
     try {
-      // TODO: Implementar demissão via API
+      await postgresAPI.dismissEmployee(id);
       toast.success("Funcionário demitido com sucesso!");
-    } catch (error) {
+      fetchFuncionarios();
+    } catch {
       toast.error("Erro ao demitir funcionário");
     }
+  };
+
+  const handleEdit = (funcionario) => {
+    setEditingId(funcionario.id);
+    setFormData({
+      nome: funcionario.nome,
+      sobrenome: funcionario.sobrenome,
+      email: funcionario.email,
+      funcaoId: funcionario.funcaoId || 1,
+      status: funcionario.status,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditingId(null);
+    setFormData({
+      nome: "",
+      sobrenome: "",
+      email: "",
+      funcaoId: 1,
+      status: "ATIVO",
+    });
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-[#333333] text-2xl font-semibold">Funcionários</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button className="bg-[#002a45] hover:bg-[#003a5f]">
               <Plus className="w-4 h-4 mr-2" />
@@ -69,14 +130,20 @@ export default function FuncionariosPage({ empresaId }) {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Cadastrar Novo Funcionário</DialogTitle>
+              <DialogTitle>
+                {editingId
+                  ? "Editar Funcionário"
+                  : "Cadastrar Novo Funcionário"}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Nome</Label>
                 <Input
                   value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nome: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -84,7 +151,9 @@ export default function FuncionariosPage({ empresaId }) {
                 <Label>Sobrenome</Label>
                 <Input
                   value={formData.sobrenome}
-                  onChange={(e) => setFormData({ ...formData, sobrenome: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sobrenome: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -93,12 +162,24 @@ export default function FuncionariosPage({ empresaId }) {
                 <Input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                 />
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-[#002a45]">
-                {loading ? "Cadastrando..." : "Cadastrar"}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#002a45]"
+              >
+                {loading
+                  ? editingId
+                    ? "Atualizando..."
+                    : "Cadastrando..."
+                  : editingId
+                  ? "Atualizar"
+                  : "Cadastrar"}
               </Button>
             </form>
           </DialogContent>
@@ -113,22 +194,41 @@ export default function FuncionariosPage({ empresaId }) {
             </p>
           ) : (
             funcionarios.map((func) => (
-              <div key={func.email} className="flex items-center justify-between p-4 border border-[#ebebeb] rounded-lg">
+              <div
+                key={func.id}
+                className="flex items-center justify-between p-4 border border-[#ebebeb] rounded-lg"
+              >
                 <div>
-                  <p className="text-[#333333]">{func.nome} {func.sobrenome}</p>
+                  <p className="text-[#333333] font-semibold">
+                    {func.nome} {func.sobrenome}
+                  </p>
                   <p className="text-sm text-[#666666]">{func.email}</p>
+                  <p className="text-xs text-[#666666] mt-1">
+                    Status:{" "}
+                    <span
+                      className={`font-semibold ${
+                        func.status === "ATIVO"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {func.status}
+                    </span>
+                  </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDemitir(func.email)}
+                  <button
+                    className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                    onClick={() => handleEdit(func)}
                   >
-                    <UserX className="w-4 h-4" />
-                  </Button>
+                    <Pencil className="w-4 h-4 text-white" />
+                  </button>
+                  <button
+                    className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
+                    onClick={() => handleDemitir(func.id)}
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
                 </div>
               </div>
             ))
@@ -138,4 +238,3 @@ export default function FuncionariosPage({ empresaId }) {
     </div>
   );
 }
-

@@ -11,19 +11,13 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Carregar histórico de chat
     mongoAPI.getChatHistory()
       .then((data) => {
         if (data && data.length > 0 && data[0].mensagens) {
           setMensagens(data[0].mensagens);
         }
       })
-      .catch((error) => {
-        // Silenciar erros de CORS (esperados quando API não permite CORS)
-        if (!error.message?.includes('CORS') && !error.message?.includes('Failed to fetch')) {
-          console.error("Erro ao buscar histórico:", error);
-        }
-      });
+      .catch(() => {});
   }, []);
 
   const handleEnviar = async () => {
@@ -39,7 +33,6 @@ export default function ChatPage() {
     setInputMensagem("");
     setLoading(true);
 
-    // Simular resposta da IA
     setTimeout(() => {
       const resposta = {
         mensagem: "Olá! Como posso ajudar você hoje?",

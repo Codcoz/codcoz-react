@@ -6,8 +6,6 @@ import { Toaster } from 'sonner'
 import { postgresAPI } from './lib/api'
 import { signOut } from 'firebase/auth'
 import { auth } from './firebase'
-
-// Páginas
 import Home from './pages/Home'
 import PedidosPage from './pages/PedidosPage'
 import FuncionariosPage from './pages/FuncionariosPage'
@@ -15,6 +13,9 @@ import ProdutosPage from './pages/ProdutosPage'
 import GastronomiaPage from './pages/GastronomiaPage'
 import ChatPage from './pages/ChatPage'
 import Login from './pages/Login.jsx'
+import ChatbotFloat from './components/ChatbotFloat'
+import TarefasPage from './pages/TarefasPage'
+import RelatoriosPage from './pages/RelatoriosPage'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home')
@@ -25,7 +26,6 @@ function App() {
   useEffect(() => {
     const userEmail = sessionStorage.getItem("userEmail")
     if (userEmail) {
-      // Buscar dados do funcionário
       postgresAPI.getEmployeeByEmail(userEmail)
         .then((employee) => {
           setUser({
@@ -36,14 +36,12 @@ function App() {
           })
           setLoading(false)
         })
-        .catch((error) => {
-          console.error('Erro ao buscar dados do funcionário:', error)
-          // Se não encontrar, usar apenas o email
+        .catch(() => {
           setUser({
             email: userEmail,
             nome: 'Gestor',
             sobrenome: '',
-            empresaId: 1 // Valor padrão
+            empresaId: 1
           })
           setLoading(false)
         })
@@ -54,15 +52,11 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      // Fazer logout do Firebase
       await signOut(auth)
-      // Remover dados da sessão
       sessionStorage.removeItem("userEmail")
       setUser(null)
       setCurrentPage('home')
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error)
-      // Mesmo com erro, limpar a sessão local
+    } catch {
       sessionStorage.removeItem("userEmail")
       setUser(null)
       setCurrentPage('home')
@@ -74,18 +68,24 @@ function App() {
     
     switch (currentPage) {
       case 'pedidos':
-        return <PedidosPage empresaId={user.empresaId} />
+        return <TarefasPage empresaId={user.empresaId} />
       case 'funcionarios':
         return <FuncionariosPage empresaId={user.empresaId} />
       case 'produtos':
         return <ProdutosPage empresaId={user.empresaId} />
       case 'gastronomia':
         return <GastronomiaPage empresaId={user.empresaId} />
+      case 'xml':
+        return <PedidosPage empresaId={user.empresaId} />
+      case 'tarefas':
+        return <TarefasPage empresaId={user.empresaId} />
+      case 'relatorios':
+        return <RelatoriosPage empresaId={user.empresaId} />
       case 'chat':
         return <ChatPage />
       case 'home':
       default:
-        return <Home empresaId={user.empresaId} />
+        return <Home empresaId={user.empresaId} onNavigate={setCurrentPage} />
     }
   }
 
@@ -125,6 +125,7 @@ function App() {
           userId={user.empresaId?.toString() || ""}
           sidebarWidth={sidebarWidth}
           onLogout={handleLogout}
+          onNavigate={setCurrentPage}
         />
         
         <div className="pt-[88px] min-h-screen">
@@ -134,6 +135,7 @@ function App() {
         </div>
       </div>
 
+      <ChatbotFloat />
       <Toaster position="top-right" />
     </div>
   )

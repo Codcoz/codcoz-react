@@ -1,29 +1,24 @@
 import { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
 import { postgresAPI } from "../lib/api";
-import { Package } from "lucide-react";
+import { Package, Pencil, Trash2 } from "lucide-react";
 
 export default function ProdutosPage({ empresaId }) {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar produtos
     postgresAPI
       .listProducts(empresaId)
       .then((data) => {
         setProdutos(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch((error) => {
-        if (!error.message?.includes("404")) {
-          console.error("Erro ao buscar produtos:", error);
-        }
+      .catch(() => {
         setLoading(false);
       });
   }, [empresaId]);
 
-  // Agrupar produtos por status
   const produtosPorVencimento = produtos.filter(
     (p) => p.validade && new Date(p.validade) < new Date()
   );
@@ -157,6 +152,7 @@ export default function ProdutosPage({ empresaId }) {
                       <th className="text-left p-4 text-[#333333]">Quantidade</th>
                       <th className="text-left p-4 text-[#333333]">Marca</th>
                       <th className="text-left p-4 text-[#333333]">Validade</th>
+                      <th className="text-center p-4 text-[#333333]">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -200,6 +196,22 @@ export default function ProdutosPage({ empresaId }) {
                             {produto.validade
                               ? new Date(produto.validade).toLocaleDateString("pt-BR")
                               : "-"}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-2 justify-center items-center">
+                              <button
+                                className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                                onClick={() => {}}
+                              >
+                                <Pencil className="w-4 h-4 text-white" />
+                              </button>
+                              <button
+                                className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
+                                onClick={() => {}}
+                              >
+                                <Trash2 className="w-4 h-4 text-white" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

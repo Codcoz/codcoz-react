@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
 import { mongoAPI } from "../lib/api";
-import { UtensilsCrossed, BookOpen, Calendar } from "lucide-react";
+import { UtensilsCrossed, BookOpen, Calendar, Pencil, Trash2 } from "lucide-react";
 
 export default function GastronomiaPage({ empresaId }) {
   const [activeTab, setActiveTab] = useState("ingredientes");
@@ -15,54 +15,33 @@ export default function GastronomiaPage({ empresaId }) {
   });
 
   useEffect(() => {
-    // Carregar ingredientes
     mongoAPI
       .getIngredients(empresaId)
       .then((data) => {
         setIngredientes(Array.isArray(data) ? data : []);
         setLoading((prev) => ({ ...prev, ingredientes: false }));
       })
-      .catch((error) => {
-        if (
-          !error.message?.includes("CORS") &&
-          !error.message?.includes("Failed to fetch")
-        ) {
-          console.error("Erro ao buscar ingredientes:", error);
-        }
+      .catch(() => {
         setLoading((prev) => ({ ...prev, ingredientes: false }));
       });
 
-    // Carregar receitas
     mongoAPI
       .getRecipes(empresaId)
       .then((data) => {
         setReceitas(Array.isArray(data) ? data : []);
         setLoading((prev) => ({ ...prev, receitas: false }));
       })
-      .catch((error) => {
-        if (
-          !error.message?.includes("CORS") &&
-          !error.message?.includes("Failed to fetch")
-        ) {
-          console.error("Erro ao buscar receitas:", error);
-        }
+      .catch(() => {
         setLoading((prev) => ({ ...prev, receitas: false }));
       });
 
-    // Carregar cardápios
     mongoAPI
       .getMenus(empresaId)
       .then((data) => {
         setCardapios(Array.isArray(data) ? data : []);
         setLoading((prev) => ({ ...prev, cardapios: false }));
       })
-      .catch((error) => {
-        if (
-          !error.message?.includes("CORS") &&
-          !error.message?.includes("Failed to fetch")
-        ) {
-          console.error("Erro ao buscar cardápios:", error);
-        }
+      .catch(() => {
         setLoading((prev) => ({ ...prev, cardapios: false }));
       });
   }, [empresaId]);
@@ -161,11 +140,27 @@ export default function GastronomiaPage({ empresaId }) {
                     <p className="text-sm text-[#666666] mb-2">
                       {ingrediente.descricao || "Sem descrição"}
                     </p>
-                    {ingrediente.categoria && (
-                      <span className="inline-block px-2 py-1 text-xs bg-[#ebebeb] text-[#666666] rounded">
-                        {ingrediente.categoria}
-                      </span>
-                    )}
+                    <div className="flex justify-between items-center mt-3">
+                      {ingrediente.categoria && (
+                        <span className="inline-block px-2 py-1 text-xs bg-[#ebebeb] text-[#666666] rounded">
+                          {ingrediente.categoria}
+                        </span>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                          onClick={() => {}}
+                        >
+                          <Pencil className="w-4 h-4 text-white" />
+                        </button>
+                        <button
+                          className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
+                          onClick={() => {}}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -199,6 +194,20 @@ export default function GastronomiaPage({ empresaId }) {
                         <p className="text-sm text-[#666666] line-clamp-2">
                           {receita.descricao || "Sem descrição"}
                         </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                          onClick={() => {}}
+                        >
+                          <Pencil className="w-4 h-4 text-white" />
+                        </button>
+                        <button
+                          className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
+                          onClick={() => {}}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#ebebeb]">
@@ -287,11 +296,27 @@ export default function GastronomiaPage({ empresaId }) {
                             </p>
                           )}
                       </div>
-                      {cardapio.periodicidade && (
-                        <span className="px-3 py-1 text-xs bg-[#002a45]/10 text-[#002a45] rounded-full">
-                          {cardapio.periodicidade}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {cardapio.periodicidade && (
+                          <span className="px-3 py-1 text-xs bg-[#002a45]/10 text-[#002a45] rounded-full">
+                            {cardapio.periodicidade}
+                          </span>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                            onClick={() => {}}
+                          >
+                            <Pencil className="w-4 h-4 text-white" />
+                          </button>
+                          <button
+                            className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
+                            onClick={() => {}}
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     {cardapio.cardapio_semanal &&
                       cardapio.cardapio_semanal.length > 0 && (

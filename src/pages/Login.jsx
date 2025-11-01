@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth } from "../firebase";
 import { toast } from "sonner";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -17,20 +17,11 @@ export default function Login({ onLogin }) {
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, senha);
-
-      // salva o email no sessionStorage
       sessionStorage.setItem("userEmail", userCred.user.email);
-
       toast.success("Login realizado com sucesso!");
-      
-      // notifica o App.jsx que o usuário logou
       if (onLogin) onLogin(userCred.user.email);
-      
-      // Recarrega a página para aplicar as mudanças
       window.location.reload();
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      
       if (error.code === "auth/user-not-found") {
         toast.error("Usuário não encontrado");
       } else if (error.code === "auth/wrong-password") {
