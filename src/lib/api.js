@@ -1,0 +1,331 @@
+const isDevelopment = import.meta.env.DEV;
+const POSTGRES_API_URL = isDevelopment
+  ? "/api/postgres"
+  : "https://codcoz-api-postgres.koyeb.app";
+const MONGO_API_URL = isDevelopment
+  ? "/api/mongo"
+  : "https://codcoz-api-mongo.onrender.com";
+
+async function fetchWithTimeout(url, options = {}) {
+  const { timeout = 10000, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...fetchOptions.headers,
+      },
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if (error.name === "AbortError") {
+      throw new Error("Request timeout");
+    }
+    throw error;
+  }
+}
+
+export const postgresAPI = {
+  async getEmployeeByEmail(email) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/funcionario/buscar/${encodeURIComponent(email)}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listEmployees(empresaId) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/funcionario/listar/${empresaId}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async createEmployee(data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/funcionario/inserir`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateEmployee(id, data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/funcionario/atualizar/${id}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async dismissEmployee(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/funcionario/demitir/${id}`,
+      { method: "PUT" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getProductStockQuantity(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/quantidade-estoque/${empresaId}`
+      );
+      if (!response.ok) return 0;
+      return await response.json();
+    } catch {
+      return 0;
+    }
+  },
+
+  async getProductsNearExpiration(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/quantidade/proximo-validade/${empresaId}`
+      );
+      if (!response.ok) return 0;
+      return await response.json();
+    } catch {
+      return 0;
+    }
+  },
+
+  async getProductsLowStock(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/quantidade/estoque-baixo/${empresaId}`
+      );
+      if (!response.ok) return 0;
+      return await response.json();
+    } catch {
+      return 0;
+    }
+  },
+
+  async listMovements(empresaId) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/listar/${empresaId}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getMovementById(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/buscar/${id}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listEntryMovements(empresaId) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/entradas/empresa/${empresaId}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listEntryMovementsByPeriod(empresaId, dataInicio, dataFim) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/entradas/empresa/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listExitMovements(empresaId) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/baixas/empresa/${empresaId}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listExitMovementsByPeriod(empresaId, dataInicio, dataFim) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/movimentacao/baixas/empresa/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async listProducts(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/listar/estoque/${empresaId}`
+      );
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getTasksByDate(email, data) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/buscar-data/${encodeURIComponent(
+          email
+        )}?data=${data}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+};
+
+export const mongoAPI = {
+  async getIngredients(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/empresa/${empresaId}/ingrediente`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async createIngredient(empresaId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/ingrediente`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateIngredient(empresaId, ingredientId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/ingrediente/${ingredientId}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getRecipes(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async createRecipe(empresaId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateRecipe(empresaId, recipeId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita/${recipeId}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getMenus(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/empresa/${empresaId}/cardapio`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async createMenu(empresaId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/cardapio`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateMenu(empresaId, cardapioId, data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/cardapio/${cardapioId}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getChatHistory() {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/historico-chat`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async saveChatHistory(data) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/historico-chat`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+};
+
+export async function checkAPIHealth() {
+  const checks = { postgres: false, mongo: false };
+
+  try {
+    const postgresResponse = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/empresa/buscar/1`,
+      { timeout: 3000 }
+    );
+    checks.postgres = postgresResponse.status !== 0;
+  } catch {
+    checks.postgres = false;
+  }
+
+  try {
+    const mongoResponse = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/1`,
+      { timeout: 3000 }
+    );
+    checks.mongo = mongoResponse.status !== 0;
+  } catch {
+    checks.mongo = false;
+  }
+
+  return checks;
+}
