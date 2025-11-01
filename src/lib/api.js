@@ -4,7 +4,7 @@ const POSTGRES_API_URL = isDevelopment
   : "https://codcoz-api-postgres.koyeb.app";
 const MONGO_API_URL = isDevelopment
   ? "/api/mongo"
-  : "https://codcoz-api-mongo.onrender.com";
+  : "https://codcoz-api-mongo-eemr.onrender.com";
 
 async function fetchWithTimeout(url, options = {}) {
   const { timeout = 10000, ...fetchOptions } = options;
