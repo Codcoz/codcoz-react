@@ -6,6 +6,17 @@ export function Avatar({ className = '', children }) {
   );
 }
 
+export function AvatarImage({ src, alt = '', className = '' }) {
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={`h-full w-full object-cover rounded-full ${className}`}
+    />
+  );
+}
+
 export function AvatarFallback({ className = '', children }) {
   return (
     <div className={`flex h-full w-full items-center justify-center rounded-full ${className}`}>

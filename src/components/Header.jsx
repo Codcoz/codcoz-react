@@ -1,12 +1,26 @@
 import { useState } from "react";
-import { Bell, HelpCircle, Search, X, LogOut } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/Avatar";
+import {
+  Bell,
+  HelpCircle,
+  Search,
+  X,
+  LogOut,
+  Mail,
+  Building2,
+  Calendar,
+  User,
+  Shield,
+} from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/Avatar";
 import { Button } from "./ui/Button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
+import { postgresAPI } from "../lib/api";
 
 export default function Header({
   userName = "Gestor",
   userEmail = "",
   userRole = "Gestor",
+  userImage = null,
   sidebarWidth = 72,
   onLogout,
   onNavigate,
@@ -14,6 +28,9 @@ export default function Header({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const initials = userName
     .split(" ")
@@ -40,10 +57,6 @@ export default function Header({
       label: "Visualizar Relatórios",
       action: () => onNavigate?.("relatorios"),
     },
-    {
-      label: "Falar com ChefIA",
-      action: () => {},
-    },
   ];
 
   const handleSearch = (e) => {
@@ -57,14 +70,31 @@ export default function Header({
     setShowSearchDropdown(false);
   };
 
+  const handleVerMais = async () => {
+    setShowUserDropdown(false);
+    setShowProfileModal(true);
+
+    if (!employeeData && userEmail) {
+      setLoadingProfile(true);
+      try {
+        const data = await postgresAPI.getEmployeeByEmail(userEmail);
+        setEmployeeData(data);
+      } catch (error) {
+        console.error("Erro ao buscar dados do funcionário:", error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+  };
+
   return (
     <div
-      className="fixed right-0 top-0 h-[88px] bg-transparent z-40 transition-all duration-200 ease-in-out"
-      style={{ left: `${sidebarWidth}px` }}
+      className="h-[88px] bg-transparent z-40 transition-all duration-200 ease-in-out flex items-center justify-between px-6"
+      style={{ marginLeft: `${sidebarWidth}px` }}
     >
       {/* Search */}
-      <div className="absolute left-[24px] top-[24px] w-[576px] bg-neutral-100 rounded-[12px] p-[8px] flex items-center gap-[12px]">
-        <Search className="w-6 h-6 text-[#002A45]" />
+      <div className="relative w-[576px] bg-neutral-100 rounded-[30px] p-[8px] flex items-center gap-[12px]">
+        <Search className="w-6 h-6 text-[#002A45] ml-[12px]" />
         <input
           type="text"
           value={searchQuery}
@@ -109,23 +139,20 @@ export default function Header({
         )}
       </div>
 
-      <div className="absolute right-[102px] top-[28px] flex items-center gap-[24px]">
-        <button className="w-6 h-6 text-[#333333] hover:text-[#002a45] transition-colors">
-          <Bell className="w-full h-full" />
-        </button>
-        <button className="w-6 h-6 text-[#333333] hover:text-[#002a45] transition-colors">
-          <HelpCircle className="w-full h-full" />
-        </button>
-
+      <div className="flex items-center gap-[24px]">
         <div className="relative">
           <button
             onClick={() => setShowUserDropdown(!showUserDropdown)}
             className="focus:outline-none"
           >
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-yellow-400 text-white font-semibold">
-                {initials}
-              </AvatarFallback>
+            <Avatar className="w-10 h-10">
+              {userImage ? (
+                <AvatarImage src={userImage} alt={fullName} />
+              ) : (
+                <AvatarFallback className="bg-yellow-400 text-white font-semibold">
+                  {initials}
+                </AvatarFallback>
+              )}
             </Avatar>
           </button>
 
@@ -139,9 +166,13 @@ export default function Header({
               <div className="absolute right-0 top-[48px] w-[360px] bg-white rounded-lg shadow-lg p-6 z-50">
                 <div className="flex items-start gap-4">
                   <Avatar className="w-16 h-16 shrink-0">
-                    <AvatarFallback className="bg-yellow-400 text-white font-semibold text-lg">
-                      {initials}
-                    </AvatarFallback>
+                    {userImage ? (
+                      <AvatarImage src={userImage} alt={fullName} />
+                    ) : (
+                      <AvatarFallback className="bg-yellow-400 text-white font-semibold text-lg">
+                        {initials}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
 
                   {/* User Info */}
@@ -176,16 +207,13 @@ export default function Header({
                 <div className="mt-6 pt-4 border-t border-[#ebebeb] space-y-3">
                   <Button
                     className="w-full bg-[#002a45] hover:bg-[#003a5f] text-white"
-                    onClick={() => {
-                      // TODO: Implementar ação "Ver mais"
-                      setShowUserDropdown(false);
-                    }}
+                    onClick={handleVerMais}
                   >
                     Ver mais
                   </Button>
 
                   <Button
-                    className="w-full bg-transparent hover:bg-[#ebebeb] text-[#333333] border border-[#ebebeb]"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white border border-red-600 hover:border-red-700 transition-colors"
                     onClick={() => {
                       setShowUserDropdown(false);
                       if (onLogout) {
@@ -202,6 +230,182 @@ export default function Header({
           )}
         </div>
       </div>
+
+      {/* Profile Modal */}
+      <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-[#002a45]">
+              Perfil do Usuário
+            </DialogTitle>
+          </DialogHeader>
+
+          {loadingProfile ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#002a45]"></div>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-6">
+              {/* Header Section with Avatar */}
+              <div className="flex flex-col items-center bg-gradient-to-br from-[#002a45] to-[#003a5f] rounded-lg p-8 text-white">
+                <Avatar className="w-24 h-24 mb-4 ring-4 ring-white/20">
+                  {userImage ? (
+                    <AvatarImage src={userImage} alt={fullName} />
+                  ) : (
+                    <AvatarFallback className="bg-yellow-400 text-[#002a45] font-bold text-2xl">
+                      {initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <h2 className="text-2xl font-bold mb-1">{fullName}</h2>
+                <p className="text-white/80 text-sm">{userRole}</p>
+              </div>
+
+              {/* Information Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email Card */}
+                <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                      <Mail className="w-5 h-5 text-[#002a45]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-[#666666] mb-1">Email</p>
+                      <p className="text-sm font-medium text-[#333333] break-all">
+                        {email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Function Card */}
+                <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                      <Shield className="w-5 h-5 text-[#002a45]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-[#666666] mb-1">Função</p>
+                      <p className="text-sm font-medium text-[#333333]">
+                        {role}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employee ID Card */}
+                {employeeData?.id && (
+                  <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                        <User className="w-5 h-5 text-[#002a45]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-[#666666] mb-1">
+                          ID do Funcionário
+                        </p>
+                        <p className="text-sm font-medium text-[#333333]">
+                          #{employeeData.id}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Company Card */}
+                {employeeData?.empresaId && (
+                  <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                        <Building2 className="w-5 h-5 text-[#002a45]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-[#666666] mb-1">
+                          Empresa ID
+                        </p>
+                        <p className="text-sm font-medium text-[#333333]">
+                          #{employeeData.empresaId}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Card */}
+                {employeeData?.status && (
+                  <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                        <Calendar className="w-5 h-5 text-[#002a45]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-[#666666] mb-1">Status</p>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            employeeData.status === "ATIVO" ||
+                            employeeData.status === "Ativo"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {employeeData.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Hiring Date Card */}
+                {employeeData?.dataContratacao && (
+                  <div className="bg-white border border-[#ebebeb] rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-[#002a45]/10 rounded-lg">
+                        <Calendar className="w-5 h-5 text-[#002a45]" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-[#666666] mb-1">
+                          Data de Contratação
+                        </p>
+                        <p className="text-sm font-medium text-[#333333]">
+                          {new Date(
+                            employeeData.dataContratacao
+                          ).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-[#ebebeb]">
+                <Button
+                  className="flex-1 bg-[#002a45] hover:bg-[#003a5f] text-white"
+                  onClick={() => setShowProfileModal(false)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    if (onLogout) {
+                      onLogout();
+                    }
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

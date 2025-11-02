@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
 import { postgresAPI } from "../lib/api";
-import { Package, Pencil, Trash2 } from "lucide-react";
+import { Package, Search } from "lucide-react";
 
 export default function ProdutosPage({ empresaId }) {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     postgresAPI
@@ -19,17 +20,20 @@ export default function ProdutosPage({ empresaId }) {
       });
   }, [empresaId]);
 
-  const produtosPorVencimento = produtos.filter(
+  const produtosFiltrados = produtos.filter((p) =>
+    p.nome?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const produtosPorVencimento = produtosFiltrados.filter(
     (p) => p.validade && new Date(p.validade) < new Date()
   );
-  const produtosVencendo = produtos.filter(
+  const produtosVencendo = produtosFiltrados.filter(
     (p) =>
       p.validade &&
       new Date(p.validade) >= new Date() &&
       new Date(p.validade) <=
         new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   );
-  const produtosOK = produtos.filter(
+  const produtosOK = produtosFiltrados.filter(
     (p) =>
       !p.validade ||
       new Date(p.validade) > new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -40,11 +44,31 @@ export default function ProdutosPage({ empresaId }) {
       <h1 className="text-[#333333] mb-6 text-2xl font-semibold">Produtos</h1>
 
       <Card className="p-6">
+        {/* Barra de pesquisa */}
+        {!loading && produtos.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#666666]" />
+              <input
+                type="text"
+                placeholder="Pesquisar produto por nome..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-[#ebebeb] bg-white pl-10 pr-3 py-2 text-sm placeholder:text-[#666666] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#002a45] focus-visible:ring-offset-2"
+              />
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-center text-[#666666] py-8">Carregando produtos...</p>
-        ) : produtos.length === 0 ? (
+        ) : produtos.filter((p) =>
+            p.nome?.toLowerCase().includes(searchQuery.toLowerCase())
+          ).length === 0 ? (
           <p className="text-center text-[#666666] py-8">
-            Nenhum produto cadastrado ainda.
+            {searchQuery
+              ? "Nenhum produto encontrado com esse nome."
+              : "Nenhum produto cadastrado ainda."}
           </p>
         ) : (
           <div className="space-y-6">
@@ -152,11 +176,10 @@ export default function ProdutosPage({ empresaId }) {
                       <th className="text-left p-4 text-[#333333]">Quantidade</th>
                       <th className="text-left p-4 text-[#333333]">Marca</th>
                       <th className="text-left p-4 text-[#333333]">Validade</th>
-                      <th className="text-center p-4 text-[#333333]">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {produtos.map((produto) => {
+                    {produtosFiltrados.map((produto) => {
                       const isVencido =
                         produto.validade && new Date(produto.validade) < new Date();
                       const isVencendo =
@@ -196,22 +219,6 @@ export default function ProdutosPage({ empresaId }) {
                             {produto.validade
                               ? new Date(produto.validade).toLocaleDateString("pt-BR")
                               : "-"}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-2 justify-center items-center">
-                              <button
-                                className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
-                                onClick={() => {}}
-                              >
-                                <Pencil className="w-4 h-4 text-white" />
-                              </button>
-                              <button
-                                className="w-8 h-8 bg-[#DC143C] hover:bg-[#B22222] flex items-center justify-center rounded-lg transition-colors"
-                                onClick={() => {}}
-                              >
-                                <Trash2 className="w-4 h-4 text-white" />
-                              </button>
-                            </div>
                           </td>
                         </tr>
                       );
