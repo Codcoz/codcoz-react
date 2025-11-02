@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -17,11 +18,66 @@ export default function Login({ onLogin }) {
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, senha);
-      setEmail("");
-      setSenha("");
-      // A autenticação será gerenciada pelo onAuthStateChanged no App.jsx
-      toast.success("Login realizado com sucesso!");
-      if (onLogin) onLogin(userCred.user.email);
+
+      try {
+        const userDocRef = doc(db, "usuarios", userCred.user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+          console.error("Documento do usuário não encontrado no Firestore");
+          await signOut(auth);
+          toast.error("Erro ao verificar permissões. Usuário não encontrado.");
+          setEmail("");
+          setSenha("");
+          setLoading(false);
+          return;
+        }
+
+        const userData = userDocSnap.data();
+        console.log("Dados do usuário do Firestore:", userData);
+        console.log(
+          "funcaoId recebido:",
+          userData?.funcaoId,
+          "tipo:",
+          typeof userData?.funcaoId
+        );
+
+        const funcaoIdNumero =
+          userData?.funcaoId != null ? Number(userData.funcaoId) : null;
+
+        if (funcaoIdNumero !== 2) {
+          // Usuário não é gestor, fazer logout e mostrar erro
+          console.log(
+            "Acesso negado - funcaoId:",
+            funcaoIdNumero,
+            "esperado: 2"
+          );
+          console.log("UserData completo:", JSON.stringify(userData, null, 2));
+          await signOut(auth);
+          toast.error(
+            "Acesso negado. Apenas gestores podem acessar o sistema."
+          );
+          setEmail("");
+          setSenha("");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Login autorizado - funcaoId:", funcaoIdNumero);
+
+        // Usuário é gestor, continuar com o login
+        setEmail("");
+        setSenha("");
+        toast.success("Login realizado com sucesso!");
+        if (onLogin) onLogin(userCred.user.email);
+      } catch (employeeError) {
+        // Erro ao buscar dados do funcionário
+        await signOut(auth);
+        console.error("Erro ao buscar dados do funcionário:", employeeError);
+        toast.error("Erro ao verificar permissões. Tente novamente.");
+        setEmail("");
+        setSenha("");
+      }
     } catch (error) {
       if (error.code === "auth/invalid-email") {
         toast.error("Email inválido");
@@ -32,7 +88,6 @@ export default function Login({ onLogin }) {
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential"
       ) {
-        // Mensagem genérica para erros de credenciais
         toast.error("Email ou senha incorretos");
       } else {
         toast.error("Erro ao fazer login. Tente novamente.");

@@ -11,7 +11,7 @@ import {
   User,
   Shield,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/Avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/Avatar";
 import { Button } from "./ui/Button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/Dialog";
 import { postgresAPI } from "../lib/api";
@@ -20,6 +20,7 @@ export default function Header({
   userName = "Gestor",
   userEmail = "",
   userRole = "Gestor",
+  userImage = null,
   sidebarWidth = 72,
   onLogout,
   onNavigate,
@@ -145,9 +146,13 @@ export default function Header({
             className="focus:outline-none"
           >
             <Avatar className="w-10 h-10">
-              <AvatarFallback className="bg-yellow-400 text-white font-semibold">
-                {initials}
-              </AvatarFallback>
+              {userImage ? (
+                <AvatarImage src={userImage} alt={fullName} />
+              ) : (
+                <AvatarFallback className="bg-yellow-400 text-white font-semibold">
+                  {initials}
+                </AvatarFallback>
+              )}
             </Avatar>
           </button>
 
@@ -161,9 +166,13 @@ export default function Header({
               <div className="absolute right-0 top-[48px] w-[360px] bg-white rounded-lg shadow-lg p-6 z-50">
                 <div className="flex items-start gap-4">
                   <Avatar className="w-16 h-16 shrink-0">
-                    <AvatarFallback className="bg-yellow-400 text-white font-semibold text-lg">
-                      {initials}
-                    </AvatarFallback>
+                    {userImage ? (
+                      <AvatarImage src={userImage} alt={fullName} />
+                    ) : (
+                      <AvatarFallback className="bg-yellow-400 text-white font-semibold text-lg">
+                        {initials}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
 
                   {/* User Info */}
@@ -240,9 +249,13 @@ export default function Header({
               {/* Header Section with Avatar */}
               <div className="flex flex-col items-center bg-gradient-to-br from-[#002a45] to-[#003a5f] rounded-lg p-8 text-white">
                 <Avatar className="w-24 h-24 mb-4 ring-4 ring-white/20">
-                  <AvatarFallback className="bg-yellow-400 text-[#002a45] font-bold text-2xl">
-                    {initials}
-                  </AvatarFallback>
+                  {userImage ? (
+                    <AvatarImage src={userImage} alt={fullName} />
+                  ) : (
+                    <AvatarFallback className="bg-yellow-400 text-[#002a45] font-bold text-2xl">
+                      {initials}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <h2 className="text-2xl font-bold mb-1">{fullName}</h2>
                 <p className="text-white/80 text-sm">{userRole}</p>

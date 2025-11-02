@@ -5,7 +5,8 @@ import Sidebar from "./components/Sidebar";
 import { Toaster } from "sonner";
 import { postgresAPI } from "./lib/api";
 import { signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
+import { doc, getDoc } from "firebase/firestore";
 import Home from "./pages/Home";
 import PedidosPage from "./pages/PedidosPage";
 import FuncionariosPage from "./pages/FuncionariosPage";
@@ -26,17 +27,74 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Buscar dados do funcionário usando o email autenticado
-          const employee = await postgresAPI.getEmployeeByEmail(
-            firebaseUser.email
+          // Buscar dados do usuário do Firestore usando o UID
+          const userDocRef = doc(db, "usuarios", firebaseUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (!userDocSnap.exists()) {
+            console.error("Documento do usuário não encontrado no Firestore");
+            await signOut(auth);
+            sessionStorage.removeItem("userEmail");
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+
+          const userData = userDocSnap.data();
+
+          // Verificar se o usuário tem funcaoId = 2 (gestor)
+          console.log("Dados do usuário do Firestore no App:", userData);
+          console.log(
+            "funcaoId recebido:",
+            userData?.funcaoId,
+            "tipo:",
+            typeof userData?.funcaoId
           );
+
+          // Converter funcaoId para número e comparar (trata string "2" e número 2)
+          const funcaoIdNumero =
+            userData?.funcaoId != null ? Number(userData.funcaoId) : null;
+
+          if (funcaoIdNumero !== 2) {
+            // Usuário não é gestor, fazer logout e limpar sessão
+            console.error(
+              "Acesso negado: usuário não é gestor. funcaoId:",
+              funcaoIdNumero,
+              "esperado: 2"
+            );
+            console.error(
+              "UserData completo:",
+              JSON.stringify(userData, null, 2)
+            );
+            await signOut(auth);
+            sessionStorage.removeItem("userEmail");
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+
+          console.log("Acesso autorizado no App - funcaoId:", funcaoIdNumero);
+
+          // Buscar dados complementares do funcionário usando o email (para nome, sobrenome, empresaId)
+          let employee = null;
+          try {
+            employee = await postgresAPI.getEmployeeByEmail(firebaseUser.email);
+          } catch (error) {
+            console.warn("Erro ao buscar dados do funcionário da API:", error);
+          }
+
+          // Usuário é gestor, continuar
+          // Priorizar imagemPerfil do Firestore (userData)
           setUser({
-            email: employee.email,
-            nome: employee.nome,
-            sobrenome: employee.sobrenome,
-            empresaId: employee.empresaId,
+            email: firebaseUser.email,
+            nome: employee?.nome || userData?.nome || "",
+            sobrenome: employee?.sobrenome || userData?.sobrenome || "",
+            empresaId: employee?.empresaId || userData?.empresaId || null,
             imagemPerfil:
-              employee.imagemPerfil || firebaseUser.imagemPerfil || null,
+              userData?.imagemPerfil ||
+              employee?.imagemPerfil ||
+              firebaseUser.photoURL ||
+              null,
           });
           // Sincronizar sessionStorage apenas se autenticado
           sessionStorage.setItem("userEmail", firebaseUser.email);

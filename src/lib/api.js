@@ -440,6 +440,19 @@ export const postgresAPI = {
       return [];
     }
   },
+
+  // Ingredientes
+  async listIngredientes(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/ingrediente/listar/${empresaId}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
 };
 
 export const mongoAPI = {
