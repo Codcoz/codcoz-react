@@ -567,7 +567,10 @@ export const mongoAPI = {
       { method: "PUT", body: JSON.stringify(data) }
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    // A API retorna uma string de sucesso, não JSON
+    const text = await response.text();
+    // Se for uma string válida, retornar sucesso
+    return { success: true, message: text };
   },
 
   async deleteRecipe(empresaId, recipeId) {
@@ -576,7 +579,10 @@ export const mongoAPI = {
       { method: "DELETE" }
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    // A API retorna uma string de sucesso, não JSON
+    const text = await response.text();
+    // Se for uma string válida, retornar sucesso
+    return { success: true, message: text };
   },
 
   async getMenus(empresaId) {

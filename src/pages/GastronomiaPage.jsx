@@ -92,7 +92,9 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
     modoPreparo: [],
     tempoPreparoMinutos: 0,
     tempoCozimentoMinutos: 0,
-    empresa_id: empresaId,
+    porcoes: 0,
+    urlImagem: "",
+    empresaId: empresaId,
   });
   const [novoIngrediente, setNovoIngrediente] = useState({
     nome: "",
@@ -110,6 +112,8 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
   const [cardapioDetalhes, setCardapioDetalhes] = useState(null);
   const [mostrarDetalhesCardapio, setMostrarDetalhesCardapio] = useState(false);
   const [loadingCardapioDetalhes, setLoadingCardapioDetalhes] = useState(false);
+  // Cache de receitas por ID para busca rápida
+  const [receitasCache, setReceitasCache] = useState(new Map());
 
   const fetchData = () => {
     postgresAPI
@@ -126,7 +130,18 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
     mongoAPI
       .getRecipes(empresaId)
       .then((data) => {
-        setReceitas(Array.isArray(data) ? data : []);
+        const receitasArray = Array.isArray(data) ? data : [];
+        setReceitas(receitasArray);
+        // Criar cache de receitas por ID (normalizado para lowercase)
+        const novoCache = new Map();
+        receitasArray.forEach((r) => {
+          if (r.id) novoCache.set(String(r.id).trim().toLowerCase(), r);
+          if (r._id) {
+            const idNormalizado = String(r._id).trim().toLowerCase();
+            novoCache.set(idNormalizado, r);
+          }
+        });
+        setReceitasCache(novoCache);
         setLoading((prev) => ({ ...prev, receitas: false }));
       })
       .catch(() => {
@@ -193,8 +208,8 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
           {
             nome: novoIngrediente.nome,
             quantidade: parseFloat(novoIngrediente.quantidade),
-            unidade_medida: novoIngrediente.unidade_medida,
-            receita_id: editingRecipeId || 0,
+            unidadeMedida: novoIngrediente.unidade_medida, // Armazenar como camelCase internamente
+            unidade_medida: novoIngrediente.unidade_medida, // Manter para compatibilidade com exibição
           },
         ],
       });
@@ -393,7 +408,27 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
   const handleVerDetalhesCardapio = async (cardapioId) => {
     try {
       setLoadingCardapioDetalhes(true);
-      const detalhes = await mongoAPI.getMenu(empresaId, cardapioId);
+      // Garantir que as receitas estão atualizadas antes de carregar o cardápio
+      const [detalhes, receitasAtualizadas] = await Promise.all([
+        mongoAPI.getMenu(empresaId, cardapioId),
+        mongoAPI.getRecipes(empresaId).catch(() => receitas), // Se falhar, usar lista atual
+      ]);
+      
+      // Atualizar receitas se necessário
+      if (Array.isArray(receitasAtualizadas)) {
+        setReceitas(receitasAtualizadas);
+        // Atualizar cache também (normalizado para lowercase)
+        const novoCache = new Map();
+        receitasAtualizadas.forEach((r) => {
+          if (r.id) novoCache.set(String(r.id).trim().toLowerCase(), r);
+          if (r._id) {
+            const idNormalizado = String(r._id).trim().toLowerCase();
+            novoCache.set(idNormalizado, r);
+          }
+        });
+        setReceitasCache(novoCache);
+      }
+      
       setCardapioDetalhes(detalhes);
       setMostrarDetalhesCardapio(true);
     } catch (error) {
@@ -486,14 +521,40 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
   // A API MongoDB retorna "id" (não "_id") na resposta, mas pode ter ambos
   const getReceitaNome = (receitaId) => {
     if (!receitaId) return null;
-    const receitaIdStr = String(receitaId);
+    
+    // Normalizar o ID para string e remover espaços
+    const receitaIdStr = String(receitaId).trim().toLowerCase();
 
-    // Buscar na lista local de receitas (já vem do MongoDB)
-    const receita = receitas.find(
-      (r) =>
-        String(r.id || r._id) === receitaIdStr || String(r._id) === receitaIdStr
-    );
-    if (receita?.nome) return receita.nome;
+    // Primeiro tentar buscar no cache (mais rápido)
+    const receitaCache = receitasCache.get(receitaIdStr);
+    
+    if (receitaCache?.nome) return receitaCache.nome;
+
+    // Se não encontrou no cache, buscar na lista local de receitas
+    const receita = receitas.find((r) => {
+      // Tentar todas as combinações possíveis de ID
+      const id1 = r.id ? String(r.id).trim().toLowerCase() : null;
+      const id2 = r._id ? String(r._id).trim().toLowerCase() : null;
+      
+      return (
+        (id1 && id1 === receitaIdStr) ||
+        (id2 && id2 === receitaIdStr) ||
+        // Comparação com a string original também
+        (id1 && id1 === String(receitaId).trim().toLowerCase()) ||
+        (id2 && id2 === String(receitaId).trim().toLowerCase())
+      );
+    });
+    
+    if (receita?.nome) {
+      // Adicionar ao cache para próxima vez (criar novo Map para React detectar mudança)
+      setReceitasCache((prevCache) => {
+        const novoCache = new Map(prevCache);
+        if (receita.id) novoCache.set(String(receita.id).trim().toLowerCase(), receita);
+        if (receita._id) novoCache.set(String(receita._id).trim().toLowerCase(), receita);
+        return novoCache;
+      });
+      return receita.nome;
+    }
 
     // Se não encontrou, retorna null (mostrará "Receita não encontrada")
     return null;
@@ -587,14 +648,24 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
     try {
       setFormLoading(true);
       const receita = await mongoAPI.getRecipe(empresaId, recipeId);
+      // Mapear ingredientes para garantir compatibilidade (unidadeMedida/unidade_medida)
+      const ingredientesMapeados = (receita.ingredientes || []).map((ing) => ({
+        nome: ing.nome || "",
+        quantidade: ing.quantidade || 0,
+        unidadeMedida: ing.unidadeMedida || "",
+        unidade_medida: ing.unidadeMedida || ing.unidade_medida || "", // Manter ambos para compatibilidade
+      }));
+      
       setFormData({
         nome: receita.nome || "",
         descricao: receita.descricao || "",
-        ingredientes: receita.ingredientes || [],
+        ingredientes: ingredientesMapeados,
         modoPreparo: receita.modoPreparo || [],
         tempoPreparoMinutos: receita.tempoPreparoMinutos || 0,
         tempoCozimentoMinutos: receita.tempoCozimentoMinutos || 0,
-        empresa_id: empresaId,
+        porcoes: receita.porcoes || 0,
+        urlImagem: receita.urlImagem || "",
+        empresaId: empresaId,
       });
       setEditingRecipeId(recipeId);
       setDialogOpen(true);
@@ -624,23 +695,25 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
     setFormLoading(true);
 
     try {
-      // Preparar dados no formato da API
+      // Preparar dados no formato da API (camelCase)
       const dataToSend = {
         nome: formData.nome,
-        descricao: formData.descricao,
+        descricao: formData.descricao || "",
+        urlImagem: formData.urlImagem || "",
         ingredientes: formData.ingredientes.map((ing) => ({
           nome: ing.nome,
-          quantidade: ing.quantidade,
-          unidade_medida: ing.unidade_medida,
-          receita_id: editingRecipeId || 0,
+          quantidade: Number(ing.quantidade) || 0,
+          unidadeMedida: ing.unidadeMedida || ing.unidade_medida || "",
+          receitaId: 0, // Sempre 0 para novos ingredientes
         })),
-        modo_preparo: formData.modoPreparo.map((passo) => ({
+        modoPreparo: formData.modoPreparo.map((passo) => ({
           ordem: passo.ordem,
           passo: passo.passo,
         })),
-        tempo_preparo_minutos: formData.tempoPreparoMinutos,
-        tempo_cozimento_minutos: formData.tempoCozimentoMinutos,
-        empresa_id: empresaId,
+        tempoPreparoMinutos: Number(formData.tempoPreparoMinutos) || 0,
+        tempoCozimentoMinutos: Number(formData.tempoCozimentoMinutos) || 0,
+        porcoes: Number(formData.porcoes) || 0,
+        empresaId: empresaId,
       };
 
       if (editingRecipeId) {
@@ -657,7 +730,7 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
       toast.error(
         editingRecipeId
           ? "Erro ao atualizar receita: " + error.message
-          : "Erro ao cadastrar receita" + error.message
+          : "Erro ao cadastrar receita: " + error.message
       );
     } finally {
       setFormLoading(false);
@@ -672,7 +745,9 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
       modoPreparo: [],
       tempoPreparoMinutos: 0,
       tempoCozimentoMinutos: 0,
-      empresa_id: empresaId,
+      porcoes: 0,
+      urlImagem: "",
+      empresaId: empresaId,
     });
     setNovoIngrediente({
       nome: "",
@@ -1206,7 +1281,8 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
                                 >
                                   <span className="text-sm">
                                     <strong>{ing.nome}</strong> -{" "}
-                                    {ing.quantidade} {ing.unidade_medida}
+                                    {ing.quantidade}{" "}
+                                    {ing.unidadeMedida || ing.unidade_medida || ""}
                                   </span>
                                   <button
                                     type="button"
@@ -1299,8 +1375,8 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
                       </div>
                     </div>
 
-                    {/* Tempos */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Tempos e Porções */}
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label>
                           <Clock className="w-4 h-4 inline mr-1" />
@@ -1339,6 +1415,43 @@ export default function GastronomiaPage({ empresaId, initialTab }) {
                           placeholder="0"
                         />
                       </div>
+                      <div>
+                        <Label>
+                          <Users className="w-4 h-4 inline mr-1" />
+                          Porções
+                        </Label>
+                        <Input
+                          type="number"
+                          value={formData.porcoes}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              porcoes: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          min="0"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* URL da Imagem */}
+                    <div>
+                      <Label>URL da Imagem</Label>
+                      <Input
+                        type="url"
+                        value={formData.urlImagem}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            urlImagem: e.target.value,
+                          })
+                        }
+                        placeholder="https://exemplo.com/imagem.jpg"
+                      />
+                      <p className="text-xs text-[#666666] mt-1">
+                        URL opcional para imagem da receita
+                      </p>
                     </div>
 
                     {/* Botões */}
