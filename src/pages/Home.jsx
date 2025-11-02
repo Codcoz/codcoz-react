@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
-import { postgresAPI } from "../lib/api";
+import { postgresAPI, mongoAPI } from "../lib/api";
 import { Button } from "../components/ui/Button";
 import {
   TrendingUp,
@@ -23,6 +23,8 @@ export default function Home({ empresaId, onNavigate }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [proximasTarefas, setProximasTarefas] = useState([]);
   const [loadingTarefas, setLoadingTarefas] = useState(true);
+  const [atividadesRecentes, setAtividadesRecentes] = useState([]);
+  const [loadingAtividades, setLoadingAtividades] = useState(true);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -38,6 +40,7 @@ export default function Home({ empresaId, onNavigate }) {
   useEffect(() => {
     fetchStats();
     fetchProximasTarefas();
+    fetchAtividadesRecentes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresaId]);
 
@@ -155,6 +158,110 @@ export default function Home({ empresaId, onNavigate }) {
     return `${dia} de ${meses[mes]}`;
   };
 
+  const fetchAtividadesRecentes = async () => {
+    if (!empresaId) return;
+
+    try {
+      setLoadingAtividades(true);
+      const historico = await mongoAPI.getHistoricoBaixas(empresaId);
+
+      // Ordenar por data mais recente primeiro e pegar as 5 mais recentes
+      const atividades = historico
+        .sort((a, b) => {
+          const dataA = new Date(a.data_acontecimento);
+          const dataB = new Date(b.data_acontecimento);
+          return dataB - dataA;
+        })
+        .slice(0, 5)
+        .map((item) => {
+          // Formatar a atividade
+          const tipo = item.tipo_registro === "Entrada" ? "Entrada" : "Saída";
+          const quantidade = item.quantidade_movimentada
+            ? `${item.quantidade_movimentada}${
+                item.unidade_medida ? ` ${item.unidade_medida}` : ""
+              }`
+            : "";
+          const nomeProduto = item.nome_produto || "Produto desconhecido";
+
+          // Formatar data
+          let dataFormatada = "";
+          if (item.data_acontecimento) {
+            const data = new Date(item.data_acontecimento);
+            const hoje = new Date();
+            const ontem = new Date(hoje);
+            ontem.setDate(hoje.getDate() - 1);
+
+            // Verificar se é hoje
+            if (
+              data.getDate() === hoje.getDate() &&
+              data.getMonth() === hoje.getMonth() &&
+              data.getFullYear() === hoje.getFullYear()
+            ) {
+              // Tem hora? Formatar hora
+              if (item.data_acontecimento.includes(" ")) {
+                const hora = data.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                dataFormatada = `Hoje às ${hora}`;
+              } else {
+                dataFormatada = "Hoje";
+              }
+            }
+            // Verificar se é ontem
+            else if (
+              data.getDate() === ontem.getDate() &&
+              data.getMonth() === ontem.getMonth() &&
+              data.getFullYear() === ontem.getFullYear()
+            ) {
+              dataFormatada = "Ontem";
+            } else {
+              // Formatar data completa
+              const dia = data.getDate();
+              const mes = data.getMonth();
+              const meses = [
+                "Jan",
+                "Fev",
+                "Mar",
+                "Abr",
+                "Mai",
+                "Jun",
+                "Jul",
+                "Ago",
+                "Set",
+                "Out",
+                "Nov",
+                "Dez",
+              ];
+              if (item.data_acontecimento.includes(" ")) {
+                const hora = data.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                dataFormatada = `${dia} de ${meses[mes]} às ${hora}`;
+              } else {
+                dataFormatada = `${dia} de ${meses[mes]}`;
+              }
+            }
+          }
+
+          return {
+            texto: quantidade
+              ? `${tipo} de ${quantidade} ${nomeProduto}`
+              : `${tipo} de ${nomeProduto}`,
+            data: dataFormatada,
+          };
+        });
+
+      setAtividadesRecentes(atividades);
+    } catch (error) {
+      console.error("Erro ao buscar atividades recentes:", error);
+      setAtividadesRecentes([]);
+    } finally {
+      setLoadingAtividades(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-[#333333] text-2xl font-semibold">Home</h1>
@@ -228,18 +335,30 @@ export default function Home({ empresaId, onNavigate }) {
               Atividades recentes
             </h2>
             <div className="space-y-4">
-              {[
-                "Entrada de ingredientes",
-                "Cadastro de fornecedor",
-                "Saída de produto",
-                "Atualização de cadastro",
-                "Edição de nota",
-              ].map((activity, i) => (
-                <div key={i} className="flex items-center gap-3 text-[#333333]">
-                  <Clock className="w-4 h-4 text-[#444444]" />
-                  <span>{activity}</span>
-                </div>
-              ))}
+              {loadingAtividades ? (
+                <p className="text-center text-[#666666] text-sm py-4">
+                  Carregando atividades...
+                </p>
+              ) : atividadesRecentes.length === 0 ? (
+                <p className="text-center text-[#666666] text-sm py-4">
+                  Nenhuma atividade recente
+                </p>
+              ) : (
+                atividadesRecentes.map((atividade, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 text-[#333333]"
+                  >
+                    <Clock className="w-4 h-4 text-[#444444] shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">{atividade.texto}</span>
+                      <span className="text-xs text-[#666666]">
+                        {atividade.data}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>

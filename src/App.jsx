@@ -35,6 +35,8 @@ function App() {
             nome: employee.nome,
             sobrenome: employee.sobrenome,
             empresaId: employee.empresaId,
+            imagemPerfil:
+              employee.imagemPerfil || firebaseUser.imagemPerfil || null,
           });
           // Sincronizar sessionStorage apenas se autenticado
           sessionStorage.setItem("userEmail", firebaseUser.email);
@@ -129,6 +131,7 @@ function App() {
           userName={`${user.nome} ${user.sobrenome}`.trim()}
           userEmail={user.email}
           userRole="Gestor"
+          userImage={user.imagemPerfil}
           userId={user.empresaId?.toString() || ""}
           sidebarWidth={sidebarWidth}
           onLogout={handleLogout}

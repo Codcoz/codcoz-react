@@ -5,6 +5,9 @@ const POSTGRES_API_URL = isDevelopment
 const MONGO_API_URL = isDevelopment
   ? "/api/mongo"
   : "https://codcoz-api-mongo-eemr.onrender.com";
+const REDIS_API_URL = isDevelopment
+  ? "/api/redis"
+  : "https://codcoz-api-redis.onrender.com";
 
 async function fetchWithTimeout(url, options = {}) {
   const { timeout = 10000, ...fetchOptions } = options;
@@ -399,6 +402,44 @@ export const postgresAPI = {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   },
+
+  // Tipos de Tarefa
+  async listTipoTarefa() {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tipo-tarefa/listar`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  // Pedidos
+  async listPedidos(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/pedido/listar/${empresaId}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async listPedidosEntrada(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/pedido/entradas/${empresaId}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
 };
 
 export const mongoAPI = {
@@ -532,6 +573,28 @@ export const mongoAPI = {
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
+  },
+
+  async getHistoricoBaixas(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${REDIS_API_URL}/api/v1/empresa/${empresaId}/historico_baixas/leitura`,
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 30000, // 30 segundos para esta requisição
+        }
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.historico_baixas || [];
+    } catch (error) {
+      console.error("Erro ao buscar histórico de baixas:", error);
+      return [];
+    }
   },
 };
 

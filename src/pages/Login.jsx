@@ -99,7 +99,14 @@ export default function Login({ onLogin }) {
         </form>
 
         <p className="text-center text-sm text-[#999999] mt-6">
-          Sistema de Gestão CodCoz © 2025
+          <a
+            href="https://codcoz-web-cadastro.onrender.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#002a45] hover:text-[#003a5f] hover:underline transition-colors"
+          >
+            Cadastre sua empresa
+          </a>
         </p>
       </div>
     </div>
