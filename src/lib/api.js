@@ -453,6 +453,48 @@ export const postgresAPI = {
       return [];
     }
   },
+
+  async getIngredienteById(id) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/ingrediente/buscar/${id}`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      throw new Error("Ingrediente não encontrado");
+    }
+  },
+
+  async createIngrediente(data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/ingrediente/inserir`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateIngrediente(id, data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/ingrediente/atualizar/${id}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    return await response.json();
+  },
+
+  async deleteIngrediente(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/ingrediente/deletar/${id}`,
+      { method: "DELETE" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
 };
 
 export const mongoAPI = {
@@ -546,6 +588,18 @@ export const mongoAPI = {
       return await response.json();
     } catch {
       return [];
+    }
+  },
+
+  async getMenu(empresaId, cardapioId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/empresa/${empresaId}/cardapio/${cardapioId}`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      throw new Error("Cardápio não encontrado");
     }
   },
 

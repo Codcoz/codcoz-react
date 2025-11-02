@@ -170,7 +170,7 @@ export default function Home({ empresaId, onNavigate }) {
         .sort((a, b) => {
           const dataA = new Date(a.data_acontecimento);
           const dataB = new Date(b.data_acontecimento);
-          return dataB - dataA;
+          return dataB - dataA; // Mais recente primeiro
         })
         .slice(0, 5)
         .map((item) => {
@@ -367,16 +367,16 @@ export default function Home({ empresaId, onNavigate }) {
         <div className="space-y-6">
           {/* Next Tasks */}
           <Card className="p-6">
-            <h2 className="text-[#333333] mb-4 font-semibold">
+            <h2 className="text-[#333333] mb-4 font-semibold text-base">
               Próximas tarefas
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {loadingTarefas ? (
-                <p className="text-center text-[#666666] text-sm py-4">
+                <p className="text-center text-[#666666] text-xs py-3">
                   Carregando tarefas...
                 </p>
               ) : proximasTarefas.length === 0 ? (
-                <p className="text-center text-[#666666] text-sm py-4">
+                <p className="text-center text-[#666666] text-xs py-3">
                   Nenhuma tarefa pendente
                 </p>
               ) : (
@@ -385,20 +385,18 @@ export default function Home({ empresaId, onNavigate }) {
                     {index > 0 && (
                       <div className="border-t border-[#ebebeb] my-2" />
                     )}
-                    <div className="flex flex-col gap-1 text-[#333333]">
-                      <div className="flex items-start gap-2">
-                        <Clock className="w-4 h-4 text-[#444444] mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {tarefa.ingrediente || tarefa.pedido || "Sem nome"}
-                          </p>
-                          <p className="text-xs text-[#666666]">
-                            {tarefa.tipoTarefa || "Tarefa"}
-                          </p>
-                          <p className="text-xs text-[#002a45] font-medium mt-1">
-                            {formatarData(tarefa.dataLimite)}
-                          </p>
-                        </div>
+                    <div className="flex items-start gap-2 py-1">
+                      <Clock className="w-3.5 h-3.5 text-[#444444] mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate leading-tight">
+                          {tarefa.ingrediente || tarefa.pedido || "Sem nome"}
+                        </p>
+                        <p className="text-xs text-[#666666] leading-tight">
+                          {tarefa.tipoTarefa || "Tarefa"}
+                        </p>
+                        <p className="text-xs text-[#002a45] font-medium mt-0.5 leading-tight">
+                          {formatarData(tarefa.dataLimite)}
+                        </p>
                       </div>
                     </div>
                   </div>

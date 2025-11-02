@@ -88,8 +88,7 @@ export default function Login({ onLogin }) {
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential"
       ) {
-        toast.error("Email ou senha incorretos");
-      } else {
+        toast.error("Email ou senha incorretos"); } else {
         toast.error("Erro ao fazer login. Tente novamente.");
       }
     } finally {
