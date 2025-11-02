@@ -131,7 +131,7 @@ export const postgresAPI = {
 
   async listEntryMovements(empresaId) {
     const response = await fetchWithTimeout(
-      `${POSTGRES_API_URL}/movimentacao/entradas/empresa/${empresaId}`
+      `${POSTGRES_API_URL}/movimentacao/entradas/${empresaId}`
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
@@ -139,7 +139,7 @@ export const postgresAPI = {
 
   async listEntryMovementsByPeriod(empresaId, dataInicio, dataFim) {
     const response = await fetchWithTimeout(
-      `${POSTGRES_API_URL}/movimentacao/entradas/empresa/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
+      `${POSTGRES_API_URL}/movimentacao/entradas/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
@@ -147,7 +147,7 @@ export const postgresAPI = {
 
   async listExitMovements(empresaId) {
     const response = await fetchWithTimeout(
-      `${POSTGRES_API_URL}/movimentacao/baixas/empresa/${empresaId}`
+      `${POSTGRES_API_URL}/movimentacao/baixas/${empresaId}`
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
@@ -155,7 +155,7 @@ export const postgresAPI = {
 
   async listExitMovementsByPeriod(empresaId, dataInicio, dataFim) {
     const response = await fetchWithTimeout(
-      `${POSTGRES_API_URL}/movimentacao/baixas/empresa/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
+      `${POSTGRES_API_URL}/movimentacao/baixas/${empresaId}/periodo?dataInicio=${dataInicio}&dataFim=${dataFim}`
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
@@ -164,7 +164,7 @@ export const postgresAPI = {
   async listProducts(empresaId) {
     try {
       const response = await fetchWithTimeout(
-        `${POSTGRES_API_URL}/produto/listar/estoque/${empresaId}`
+        `${POSTGRES_API_URL}/produto/listar/${empresaId}`
       );
       if (!response.ok) {
         if (response.status === 404) return [];
@@ -176,6 +176,69 @@ export const postgresAPI = {
     }
   },
 
+  async getProductByEan(codigoEan) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/buscar/${codigoEan}`
+      );
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async listProductsNearExpiration(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/listar/proximo-validade/${empresaId}`
+      );
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async listProductsLowStock(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/produto/listar/estoque-baixo/${empresaId}`
+      );
+      if (!response.ok) {
+        if (response.status === 404) return [];
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async registerProductEntry(codigoEan, quantidade) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/produto/entrada/${codigoEan}?quantidade=${quantidade}`,
+      { method: "PUT" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async registerProductExit(codigoEan, quantidade) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/produto/baixa/${codigoEan}?quantidade=${quantidade}`,
+      { method: "PUT" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
   async getTasksByDate(email, data) {
     try {
       const response = await fetchWithTimeout(
@@ -184,10 +247,157 @@ export const postgresAPI = {
         )}?data=${data}`
       );
       if (!response.ok) return [];
+      const dataResult = await response.json();
+      // API pode retornar objeto único ou array
+      return Array.isArray(dataResult) ? dataResult : [dataResult];
+    } catch {
+      return [];
+    }
+  },
+
+  async listTasks(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/listar/${empresaId}`
+      );
+      if (!response.ok) return [];
       return await response.json();
     } catch {
       return [];
     }
+  },
+
+  async getTaskById(id) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/${id}`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      throw new Error("Tarefa não encontrada");
+    }
+  },
+
+  async createTask(data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/tarefa/criar`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async finishTask(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/tarefa/finalizar-tarefa/${id}`,
+      { method: "PUT" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async deleteTask(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/tarefa/deletar/${id}`,
+      { method: "DELETE" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async getTasksByPeriod(email, dataInicio, dataFim) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/buscar-periodo/${encodeURIComponent(
+          email
+        )}?data_inicio=${dataInicio}&data_fim=${dataFim}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getTasksByTypeAndPeriod(email, tipo, dataInicio, dataFim) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/buscar-por-tipo/${encodeURIComponent(
+          email
+        )}?tipo=${encodeURIComponent(
+          tipo
+        )}&data_inicio=${dataInicio}&data_fim=${dataFim}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getCompletedTasks(empresaId, dias = 7) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/tarefa/buscar-concluidas/${empresaId}?dias=${dias}`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  // Categoria Ingrediente
+  async listIngredientCategories() {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/categoria-ingrediente/listar`
+      );
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+
+  async getIngredientCategory(id) {
+    try {
+      const response = await fetchWithTimeout(
+        `${POSTGRES_API_URL}/categoria-ingrediente/buscar/${id}`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      throw new Error("Categoria não encontrada");
+    }
+  },
+
+  async createIngredientCategory(data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/categoria-ingrediente/inserir`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async updateIngredientCategory(id, data) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/categoria-ingrediente/atualizar/${id}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async deleteIngredientCategory(id) {
+    const response = await fetchWithTimeout(
+      `${POSTGRES_API_URL}/categoria-ingrediente/excluir/${id}`,
+      { method: "DELETE" }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
   },
 };
 
@@ -243,10 +453,31 @@ export const mongoAPI = {
     return await response.json();
   },
 
+  async getRecipe(empresaId, recipeId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita/${recipeId}`
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      throw new Error("Receita não encontrada");
+    }
+  },
+
   async updateRecipe(empresaId, recipeId, data) {
     const response = await fetchWithTimeout(
       `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita/${recipeId}`,
       { method: "PUT", body: JSON.stringify(data) }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  },
+
+  async deleteRecipe(empresaId, recipeId) {
+    const response = await fetchWithTimeout(
+      `${MONGO_API_URL}/api/v1/empresa/${empresaId}/receita/${recipeId}`,
+      { method: "DELETE" }
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();

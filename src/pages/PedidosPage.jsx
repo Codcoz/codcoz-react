@@ -73,7 +73,7 @@ export default function PedidosPage({ empresaId }) {
 
       {/* Modal de Importação */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[800px]">
           <div className="relative">
             <button
               onClick={() => {

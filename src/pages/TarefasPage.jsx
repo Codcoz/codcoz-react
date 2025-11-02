@@ -5,12 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "../components/ui/Input";
 import { Label } from "../components/ui/Label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle, Search } from "lucide-react";
 import { postgresAPI } from "../lib/api";
 
 export default function TarefasPage({ empresaId }) {
   const [tarefas, setTarefas] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     tipoTarefa: "",
@@ -39,11 +40,40 @@ export default function TarefasPage({ empresaId }) {
     setLoading(true);
 
     try {
+      const email = sessionStorage.getItem("userEmail");
+      if (!email) {
+        toast.error("Email não encontrado na sessão");
+        return;
+      }
+
+      // Buscar funcionário para obter IDs necessários
+      const funcionario = await postgresAPI.getEmployeeByEmail(email);
+      const responsavel = await postgresAPI.getEmployeeByEmail(formData.responsavel);
+
+      const taskData = {
+        empresaId: funcionario.empresaId,
+        tipoTarefaId: 1, // TODO: implementar seleção de tipo de tarefa
+        ingredienteId: null,
+        relatorId: funcionario.id,
+        responsavelId: responsavel?.id || funcionario.id,
+        pedidoId: null,
+        situacao: formData.situacao || "PENDENTE",
+        dataTarefa: new Date().toISOString().split("T")[0],
+        dataLimite: formData.dataLimite || null,
+      };
+
+      await postgresAPI.createTask(taskData);
       toast.success("Tarefa criada com sucesso!");
       setDialogOpen(false);
       setFormData({ tipoTarefa: "", descricao: "", responsavel: "", dataLimite: "", situacao: "PENDENTE" });
-    } catch {
-      toast.error("Erro ao criar tarefa");
+      
+      // Recarregar tarefas
+      const hoje = new Date().toISOString().split("T")[0];
+      const tarefas = await postgresAPI.getTasksByDate(email, hoje);
+      setTarefas(Array.isArray(tarefas) ? tarefas : []);
+    } catch (error) {
+      console.error("Erro ao criar tarefa:", error);
+      toast.error("Erro ao criar tarefa: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
     }
@@ -51,20 +81,13 @@ export default function TarefasPage({ empresaId }) {
 
   const handleFinalizarTarefa = async (id) => {
     try {
-      const response = await fetch(`http://codcoz-api-postgres.koyeb.app/tarefa/finalizar-tarefa/${id}`, {
-        method: "PUT",
-      });
-      
-      if (response.ok) {
-        toast.success("Tarefa finalizada com sucesso!");
-        const email = sessionStorage.getItem("userEmail");
-        if (email) {
-          const hoje = new Date().toISOString().split("T")[0];
-          postgresAPI.getTasksByDate(email, hoje)
-            .then((data) => setTarefas(Array.isArray(data) ? data : []));
-        }
-      } else {
-        toast.error("Erro ao finalizar tarefa");
+      await postgresAPI.finishTask(id);
+      toast.success("Tarefa finalizada com sucesso!");
+      const email = sessionStorage.getItem("userEmail");
+      if (email) {
+        const hoje = new Date().toISOString().split("T")[0];
+        postgresAPI.getTasksByDate(email, hoje)
+          .then((data) => setTarefas(Array.isArray(data) ? data : []));
       }
     } catch {
       toast.error("Erro ao finalizar tarefa");
@@ -75,7 +98,14 @@ export default function TarefasPage({ empresaId }) {
     if (!confirm("Tem certeza que deseja remover esta tarefa?")) return;
 
     try {
+      await postgresAPI.deleteTask(id);
       toast.success("Tarefa removida com sucesso!");
+      const email = sessionStorage.getItem("userEmail");
+      if (email) {
+        const hoje = new Date().toISOString().split("T")[0];
+        postgresAPI.getTasksByDate(email, hoje)
+          .then((data) => setTarefas(Array.isArray(data) ? data : []));
+      }
     } catch {
       toast.error("Erro ao remover tarefa");
     }
@@ -144,13 +174,35 @@ export default function TarefasPage({ empresaId }) {
       </div>
 
       <Card className="p-6">
+        {/* Barra de pesquisa */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#666666]" />
+            <Input
+              type="text"
+              placeholder="Pesquisar tarefa por nome/tipo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
-          {tarefas.length === 0 ? (
+          {tarefas.filter((tarefa) =>
+            (tarefa.tipoTarefa || tarefa.tipo || "").toLowerCase().includes(searchQuery.toLowerCase())
+          ).length === 0 ? (
             <p className="text-center text-[#666666] py-8">
-              Nenhuma tarefa cadastrada ainda.
+              {searchQuery
+                ? "Nenhuma tarefa encontrada com esse nome."
+                : "Nenhuma tarefa cadastrada ainda."}
             </p>
           ) : (
-            tarefas.map((tarefa) => (
+            tarefas
+              .filter((tarefa) =>
+                (tarefa.tipoTarefa || tarefa.tipo || "").toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((tarefa) => (
               <div
                 key={tarefa.id}
                 className="flex items-center justify-between p-4 border border-[#ebebeb] rounded-lg"
@@ -192,7 +244,7 @@ export default function TarefasPage({ empresaId }) {
                     </button>
                   )}
                   <button
-                    className="w-8 h-8 bg-[#FFA500] hover:bg-[#FF8C00] flex items-center justify-center rounded-lg transition-colors"
+                    className="w-8 h-8 bg-blue-400 hover:bg-blue-500 flex items-center justify-center rounded-lg transition-colors"
                     onClick={() => {}}
                   >
                     <Pencil className="w-4 h-4 text-white" />

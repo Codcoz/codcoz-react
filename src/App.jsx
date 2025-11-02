@@ -11,7 +11,6 @@ import PedidosPage from "./pages/PedidosPage";
 import FuncionariosPage from "./pages/FuncionariosPage";
 import ProdutosPage from "./pages/ProdutosPage";
 import GastronomiaPage from "./pages/GastronomiaPage";
-import ChatPage from "./pages/ChatPage";
 import Login from "./pages/Login.jsx";
 import ChatbotFloat from "./components/ChatbotFloat";
 import TarefasPage from "./pages/TarefasPage";
@@ -89,8 +88,6 @@ function App() {
         return <TarefasPage empresaId={user.empresaId} />;
       case "relatorios":
         return <RelatoriosPage empresaId={user.empresaId} />;
-      case "chat":
-        return <ChatPage />;
       case "home":
       default:
         return <Home empresaId={user.empresaId} onNavigate={setCurrentPage} />;
@@ -138,7 +135,7 @@ function App() {
           onNavigate={setCurrentPage}
         />
 
-        <div className="pt-[88px] min-h-screen">
+        <div className="min-h-screen">
           <div className="p-8">{renderPage()}</div>
         </div>
       </div>

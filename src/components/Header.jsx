@@ -40,10 +40,6 @@ export default function Header({
       label: "Visualizar Relatórios",
       action: () => onNavigate?.("relatorios"),
     },
-    {
-      label: "Falar com ChefIA",
-      action: () => {},
-    },
   ];
 
   const handleSearch = (e) => {
@@ -59,12 +55,12 @@ export default function Header({
 
   return (
     <div
-      className="fixed right-0 top-0 h-[88px] bg-transparent z-40 transition-all duration-200 ease-in-out"
-      style={{ left: `${sidebarWidth}px` }}
+      className="h-[88px] bg-transparent z-40 transition-all duration-200 ease-in-out flex items-center justify-between px-6"
+      style={{ marginLeft: `${sidebarWidth}px` }}
     >
       {/* Search */}
-      <div className="absolute left-[24px] top-[24px] w-[576px] bg-neutral-100 rounded-[12px] p-[8px] flex items-center gap-[12px]">
-        <Search className="w-6 h-6 text-[#002A45]" />
+      <div className="relative w-[576px] bg-neutral-100 rounded-[30px] p-[8px] flex items-center gap-[12px]">
+        <Search className="w-6 h-6 text-[#002A45] ml-[12px]" />
         <input
           type="text"
           value={searchQuery}
@@ -109,20 +105,13 @@ export default function Header({
         )}
       </div>
 
-      <div className="absolute right-[102px] top-[28px] flex items-center gap-[24px]">
-        <button className="w-6 h-6 text-[#333333] hover:text-[#002a45] transition-colors">
-          <Bell className="w-full h-full" />
-        </button>
-        <button className="w-6 h-6 text-[#333333] hover:text-[#002a45] transition-colors">
-          <HelpCircle className="w-full h-full" />
-        </button>
-
+      <div className="flex items-center gap-[24px]">
         <div className="relative">
           <button
             onClick={() => setShowUserDropdown(!showUserDropdown)}
             className="focus:outline-none"
           >
-            <Avatar className="w-8 h-8">
+            <Avatar className="w-10 h-10">
               <AvatarFallback className="bg-yellow-400 text-white font-semibold">
                 {initials}
               </AvatarFallback>
