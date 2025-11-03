@@ -239,7 +239,7 @@ export default function PedidosPage({ empresaId }) {
 
                   {/* Texto do step */}
                   <p
-                    className={`text-sm font-medium text-center ${
+                    className={`text-sm font-medium text-center mt-2 ${
                       currentStep === step.number
                         ? "text-[#002a45]"
                         : "text-[#666666]"
