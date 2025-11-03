@@ -101,7 +101,7 @@ export default function Home({ empresaId, onNavigate }) {
           const dataB = new Date(b.dataLimite);
           return dataA - dataB;
         })
-        .slice(0, 5); // Limitar a 5 tarefas mais próximas
+        .slice(0, 2); // Limitar a 2 tarefas mais próximas
 
       setProximasTarefas(tarefasFiltradas);
     } catch (error) {
@@ -269,13 +269,13 @@ export default function Home({ empresaId, onNavigate }) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[#002a45]/10 rounded-lg">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-[#002a45]/10 rounded-lg shrink-0">
               <TrendingUp className="w-5 h-5 text-[#002a45]" />
             </div>
-            <div>
-              <p className="text-sm text-[#666666]">Entrada de itens</p>
-              <p className="text-[#002a45] font-semibold">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-[#666666] mb-1">Entrada de itens</p>
+              <p className="text-2xl text-[#002a45] font-semibold">
                 {stats.entradaItens}
               </p>
             </div>
@@ -283,13 +283,15 @@ export default function Home({ empresaId, onNavigate }) {
         </Card>
 
         <Card className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[#002a45]/10 rounded-lg">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-[#002a45]/10 rounded-lg shrink-0">
               <Activity className="w-5 h-5 text-[#002a45]" />
             </div>
-            <div>
-              <p className="text-sm text-[#666666]">Saída de itens</p>
-              <p className="text-[#002a45] font-semibold">{stats.saidaItens}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-[#666666] mb-1">Saída de itens</p>
+              <p className="text-2xl text-[#002a45] font-semibold">
+                {stats.saidaItens}
+              </p>
             </div>
           </div>
         </Card>
@@ -298,10 +300,10 @@ export default function Home({ empresaId, onNavigate }) {
       {/* Two Column Layout */}
       <div className="grid grid-cols-3 gap-6">
         {/* Main Content */}
-        <div className="col-span-2 space-y-6">
+        <div className="col-span-2 grid grid-cols-1 gap-6">
           {/* Import XML Section */}
           <Card className="p-6">
-            <h2 className="text-[#333333] mb-4 font-semibold">
+            <h2 className="text-lg text-[#333333] mb-4 font-semibold">
               Importar Nota Fiscal (XML)
             </h2>
             <p className="text-[#444444] mb-4">
@@ -331,10 +333,10 @@ export default function Home({ empresaId, onNavigate }) {
 
           {/* Recent Activities */}
           <Card className="p-6">
-            <h2 className="text-[#333333] mb-4 font-semibold">
+            <h2 className="text-lg text-[#333333] mb-4 font-semibold">
               Atividades recentes
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto">
               {loadingAtividades ? (
                 <p className="text-center text-[#666666] text-sm py-4">
                   Carregando atividades...
@@ -364,10 +366,10 @@ export default function Home({ empresaId, onNavigate }) {
         </div>
 
         {/* Right Column */}
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Next Tasks */}
           <Card className="p-6">
-            <h2 className="text-[#333333] mb-4 font-semibold text-base">
+            <h2 className="text-lg text-[#333333] mb-4 font-semibold">
               Próximas tarefas
             </h2>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -407,21 +409,10 @@ export default function Home({ empresaId, onNavigate }) {
 
           {/* Quick Links */}
           <Card className="p-6">
-            <h2 className="text-[#333333] mb-4 font-semibold">Links rápidos</h2>
+            <h2 className="text-lg text-[#333333] mb-4 font-semibold">
+              Links rápidos
+            </h2>
             <div className="space-y-3">
-              <div>
-                <button
-                  onClick={() => onNavigate?.("produtos")}
-                  className="w-full text-left flex items-center justify-between py-2 text-[#333333] hover:text-[#002a45] transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Activity className="w-4 h-4 text-[#444444]" />
-                    <span>Criar Produto</span>
-                  </div>
-                  <span className="text-[#555555]">›</span>
-                </button>
-                <div className="border-t border-[#ebebeb] my-1" />
-              </div>
               <div>
                 <button
                   onClick={() => onNavigate?.("pedidos")}

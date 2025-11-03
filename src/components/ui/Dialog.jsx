@@ -54,6 +54,10 @@ export function DialogContent({ children, className = "" }) {
   // Extrair max-w do className ou usar padrão
   const hasMaxWidth = className.includes("max-w-");
   const defaultMaxWidth = hasMaxWidth ? "" : "max-w-lg";
+  
+  // Verificar se já tem overflow-y-auto ou p-0 no className
+  const hasOverflow = className.includes("overflow-y-auto") || className.includes("overflow-auto");
+  const hasP0 = className.includes("p-0");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -61,10 +65,14 @@ export function DialogContent({ children, className = "" }) {
         className="fixed inset-0 bg-black/50"
         onClick={() => setOpen(false)}
       />
-      <div className={`relative z-50 w-full ${defaultMaxWidth} bg-white rounded-lg shadow-lg flex flex-col max-h-[90vh] ${className}`}>
-        <div className="overflow-y-auto flex-1 p-6">
-          {children}
-        </div>
+      <div className={`relative z-50 w-full ${defaultMaxWidth} bg-white rounded-lg shadow-lg flex flex-col max-h-[90vh] ${hasOverflow ? '' : 'overflow-hidden'} ${className}`}>
+        {hasP0 ? (
+          children
+        ) : (
+          <div className={`overflow-y-auto flex-1 ${hasOverflow ? '' : 'p-6'}`}>
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -95,11 +95,23 @@ export default function PedidosPage({ empresaId }) {
               {steps.map((step, index) => (
                 <div
                   key={step.number}
-                  className="flex flex-col items-center flex-1"
+                  className="flex flex-col items-center flex-1 relative"
                 >
-                  <div className="relative flex items-center">
+                  {/* Círculo do step */}
+                  <div className="relative flex items-center justify-center w-full mb-3">
+                    {/* Linha antes do círculo */}
+                    {index > 0 && (
+                      <div
+                        className={`absolute left-0 h-0.5 ${
+                          step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
+                        }`}
+                        style={{ width: 'calc(50% - 20px)', top: '50%', transform: 'translateY(-50%)' }}
+                      />
+                    )}
+                    
+                    {/* Círculo */}
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold border-2 ${
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold border-2 relative z-10 ${
                         step.completed || currentStep === step.number
                           ? "bg-[#002a45] text-white border-[#002a45]"
                           : "bg-white text-[#666666] border-[#ebebeb]"
@@ -111,16 +123,21 @@ export default function PedidosPage({ empresaId }) {
                         step.number
                       )}
                     </div>
+                    
+                    {/* Linha depois do círculo */}
                     {index < steps.length - 1 && (
                       <div
-                        className={`h-0.5 w-full ${
+                        className={`absolute right-0 h-0.5 ${
                           step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
                         }`}
+                        style={{ width: 'calc(50% - 20px)', top: '50%', transform: 'translateY(-50%)' }}
                       />
                     )}
                   </div>
+                  
+                  {/* Texto do step */}
                   <p
-                    className={`mt-2 text-sm font-medium ${
+                    className={`text-sm font-medium text-center ${
                       currentStep === step.number
                         ? "text-[#002a45]"
                         : "text-[#666666]"
@@ -133,7 +150,7 @@ export default function PedidosPage({ empresaId }) {
             </div>
 
             {/* Step Content */}
-            <div className="my-8">
+            <div className="mb-8">
               {currentStep === 1 && (
                 <div>
                   <h3 className="text-lg font-semibold text-[#333333] mb-4">
@@ -204,7 +221,7 @@ export default function PedidosPage({ empresaId }) {
 
             {/* Footer Buttons */}
             {currentStep < 3 && (
-              <div className="flex justify-end gap-4 pt-4 border-t border-[#ebebeb]">
+              <div className="flex justify-end gap-4 pt-6 border-t border-[#ebebeb]">
                 <Button
                   onClick={handleStepBack}
                   variant="outline"
@@ -224,7 +241,7 @@ export default function PedidosPage({ empresaId }) {
             )}
 
             {currentStep === 3 && (
-              <div className="flex justify-end pt-4 border-t border-[#ebebeb]">
+              <div className="flex justify-end pt-6 border-t border-[#ebebeb]">
                 <Button
                   onClick={handleStepContinue}
                   className="bg-[#002a45] hover:bg-[#003a5f]"

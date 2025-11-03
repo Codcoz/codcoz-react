@@ -50,7 +50,7 @@ export default function RelatoriosPage({ empresaId }) {
       <Card className="p-0 overflow-hidden">
         <iframe
           src={currentDashboard.url}
-          className="w-full h-[calc(90vh-150px)] border-0"
+          className="w-full h-[calc(95vh-150px)] border-0"
           title={currentDashboard.name}
           allowFullScreen
         />
