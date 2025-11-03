@@ -9,7 +9,6 @@ const API_URL = "https://codcoz-xml-import.onrender.com/read_xml";
 const API_INSERT_URL = "https://codcoz-xml-import.onrender.com/insert_xml";
 
 export default function PedidosPage({ empresaId }) {
-
   const currentEmpresaId = empresaId || 1;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,7 +16,6 @@ export default function PedidosPage({ empresaId }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [xmlData, setXmlData] = useState(null); // Novo estado para os dados do XML
   const [isLoading, setIsLoading] = useState(false); // Novo estado para o loading
-
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -54,7 +52,9 @@ export default function PedidosPage({ empresaId }) {
       if (!response.ok) {
         // Tenta ler a mensagem de erro do corpo da resposta, se disponível
         const errorText = await response.text();
-        throw new Error(`Erro na requisição: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Erro na requisição: ${response.status} - ${errorText}`
+        );
       }
 
       const data = await response.json();
@@ -85,7 +85,9 @@ export default function PedidosPage({ empresaId }) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Erro na requisição: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Erro na requisição: ${response.status} - ${errorText}`
+        );
       }
 
       // Se a API retornar sucesso (status 200/201), avança para o Passo 3
@@ -133,10 +135,14 @@ export default function PedidosPage({ empresaId }) {
 
   return (
     <div>
-      <h1 className="text-[#333333] mb-6 text-2xl font-semibold">Pedidos e Notas Fiscais</h1>
+      <h1 className="text-[#333333] mb-6 text-2xl font-semibold">
+        Pedidos e Notas Fiscais
+      </h1>
 
       <Card className="p-6 mb-6">
-        <h2 className="text-[#333333] mb-4 font-semibold">Importar XML de Nota Fiscal</h2>
+        <h2 className="text-[#333333] mb-4 font-semibold">
+          Importar XML de Nota Fiscal
+        </h2>
         <p className="text-[#666666] mb-4">
           Importe arquivos XML de notas fiscais recebidas de fornecedores.
         </p>
@@ -150,7 +156,9 @@ export default function PedidosPage({ empresaId }) {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-[#333333] mb-4 font-semibold">Notas Fiscais Importadas</h2>
+        <h2 className="text-[#333333] mb-4 font-semibold">
+          Notas Fiscais Importadas
+        </h2>
         <p className="text-center text-[#666666] py-8">
           Nenhuma nota fiscal importada ainda.
         </p>
@@ -181,14 +189,31 @@ export default function PedidosPage({ empresaId }) {
               {steps.map((step, index) => (
                 <div
                   key={step.number}
-                  className="flex flex-col items-center flex-1"
+                  className="flex flex-col items-center flex-1 relative"
                 >
-                  <div className="relative flex items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold border-2 ${step.completed || currentStep === step.number
-                        ? "bg-[#002a45] text-white border-[#002a45]"
-                        : "bg-white text-[#666666] border-[#ebebeb]"
+                  {/* Círculo do step */}
+                  <div className="relative flex items-center justify-center w-full mb-3">
+                    {/* Linha antes do círculo */}
+                    {index > 0 && (
+                      <div
+                        className={`absolute left-0 h-0.5 ${
+                          step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
                         }`}
+                        style={{
+                          width: "calc(50% - 20px)",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                        }}
+                      />
+                    )}
+
+                    {/* Círculo */}
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold border-2 relative z-10 ${
+                        step.completed || currentStep === step.number
+                          ? "bg-[#002a45] text-white border-[#002a45]"
+                          : "bg-white text-[#666666] border-[#ebebeb]"
+                      }`}
                     >
                       {step.completed ? (
                         <Check className="w-5 h-5" />
@@ -196,18 +221,29 @@ export default function PedidosPage({ empresaId }) {
                         step.number
                       )}
                     </div>
+
+                    {/* Linha depois do círculo */}
                     {index < steps.length - 1 && (
                       <div
-                        className={`h-0.5 w-full ${step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
-                          }`}
+                        className={`absolute right-0 h-0.5 ${
+                          step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
+                        }`}
+                        style={{
+                          width: "calc(50% - 20px)",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                        }}
                       />
                     )}
                   </div>
+
+                  {/* Texto do step */}
                   <p
-                    className={`mt-2 text-sm font-medium ${currentStep === step.number
-                      ? "text-[#002a45]"
-                      : "text-[#666666]"
-                      }`}
+                    className={`text-sm font-medium text-center ${
+                      currentStep === step.number
+                        ? "text-[#002a45]"
+                        : "text-[#666666]"
+                    }`}
                   >
                     {step.label}
                   </p>
@@ -216,7 +252,7 @@ export default function PedidosPage({ empresaId }) {
             </div>
 
             {/* Step Content */}
-            <div className="my-8">
+            <div className="mb-8">
               {currentStep === 1 && (
                 <div>
                   <h3 className="text-lg font-semibold text-[#333333] mb-4">
@@ -259,34 +295,61 @@ export default function PedidosPage({ empresaId }) {
                   </h3>
                   {isLoading && (
                     <div className="text-center py-8">
-                      <p className="text-[#002a45] font-semibold">Processando XML... Aguarde.</p>
+                      <p className="text-[#002a45] font-semibold">
+                        Processando XML... Aguarde.
+                      </p>
                     </div>
                   )}
                   {!isLoading && xmlData && (
                     <div className="space-y-4">
                       <div className="border border-[#ebebeb] rounded-lg p-4">
-                        <h4 className="font-semibold text-[#333333] mb-2">Detalhes da Nota Fiscal</h4>
+                        <h4 className="font-semibold text-[#333333] mb-2">
+                          Detalhes da Nota Fiscal
+                        </h4>
                         <p className="text-sm text-[#666666]">
                           <strong>ID NFe:</strong> {xmlData.id_nfe}
                         </p>
                         <p className="text-sm text-[#666666]">
-                          <strong>Data de Emissão:</strong> {new Date(xmlData.data_emissao).toLocaleDateString('pt-BR')}
+                          <strong>Data de Emissão:</strong>{" "}
+                          {new Date(xmlData.data_emissao).toLocaleDateString(
+                            "pt-BR"
+                          )}
                         </p>
                       </div>
 
                       <div className="border border-[#ebebeb] rounded-lg overflow-hidden">
                         <div className="bg-[#f8f9fa] p-4 border-b border-[#ebebeb]">
-                          <h4 className="font-semibold text-[#333333]">Produtos ({xmlData.produtos.length})</h4>
+                          <h4 className="font-semibold text-[#333333]">
+                            Produtos ({xmlData.produtos.length})
+                          </h4>
                         </div>
                         <div className="p-4">
                           {xmlData.produtos.map((produto, index) => (
-                            <div key={index} className="mb-4 p-3 border-b last:border-b-0">
-                              <p className="font-medium text-[#333333]">{produto.nome_produto}</p>
+                            <div
+                              key={index}
+                              className="mb-4 p-3 border-b last:border-b-0"
+                            >
+                              <p className="font-medium text-[#333333]">
+                                {produto.nome_produto}
+                              </p>
                               <div className="grid grid-cols-2 gap-1 text-sm text-[#666666]">
-                                <p><strong>EAN:</strong> {produto.ean}</p>
-                                <p><strong>Quantidade:</strong> {produto.quantidade} {produto.unidade_medida}</p>
-                                <p><strong>Valor Unitário:</strong> R$ {parseFloat(produto.valor_unitario).toFixed(2)}</p>
-                                <p><strong>Valor Total:</strong> R$ {parseFloat(produto.valor_total).toFixed(2)}</p>
+                                <p>
+                                  <strong>EAN:</strong> {produto.ean}
+                                </p>
+                                <p>
+                                  <strong>Quantidade:</strong>{" "}
+                                  {produto.quantidade} {produto.unidade_medida}
+                                </p>
+                                <p>
+                                  <strong>Valor Unitário:</strong> R${" "}
+                                  {parseFloat(produto.valor_unitario).toFixed(
+                                    2
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Valor Total:</strong> R${" "}
+                                  {parseFloat(produto.valor_total).toFixed(2)}
+                                </p>
                               </div>
                             </div>
                           ))}
@@ -297,7 +360,9 @@ export default function PedidosPage({ empresaId }) {
                   {!isLoading && !xmlData && (
                     <div className="border border-[#ebebeb] rounded-lg overflow-hidden">
                       <div className="bg-[#f8f9fa] p-4 border-b border-[#ebebeb]">
-                        <h4 className="font-semibold text-[#333333]">Produtos</h4>
+                        <h4 className="font-semibold text-[#333333]">
+                          Produtos
+                        </h4>
                       </div>
                       <div className="p-4 text-center text-[#666666]">
                         Aguardando dados do XML...
@@ -325,7 +390,7 @@ export default function PedidosPage({ empresaId }) {
 
             {/* Footer Buttons */}
             {currentStep < 3 && (
-              <div className="flex justify-end gap-4 pt-4 border-t border-[#ebebeb]">
+              <div className="flex justify-end gap-4 pt-6 border-t border-[#ebebeb]">
                 <Button
                   onClick={handleStepBack}
                   variant="outline"
@@ -337,15 +402,22 @@ export default function PedidosPage({ empresaId }) {
                 <Button
                   onClick={handleStepContinue}
                   className="bg-[#002a45] hover:bg-[#003a5f]"
-                  disabled={currentStep === 1 && (!selectedFile || isLoading) || currentStep === 2 && !xmlData}
+                  disabled={
+                    (currentStep === 1 && (!selectedFile || isLoading)) ||
+                    (currentStep === 2 && !xmlData)
+                  }
                 >
-                  {isLoading ? "Carregando..." : currentStep === 2 ? "Finalizar" : "Continuar"}
+                  {isLoading
+                    ? "Carregando..."
+                    : currentStep === 2
+                    ? "Finalizar"
+                    : "Continuar"}
                 </Button>
               </div>
             )}
 
             {currentStep === 3 && (
-              <div className="flex justify-end pt-4 border-t border-[#ebebeb]">
+              <div className="flex justify-end pt-6 border-t border-[#ebebeb]">
                 <Button
                   onClick={handleStepContinue}
                   className="bg-[#002a45] hover:bg-[#003a5f]"
