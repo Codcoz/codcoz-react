@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -17,23 +18,78 @@ export default function Login({ onLogin }) {
 
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, senha);
-      sessionStorage.setItem("userEmail", userCred.user.email);
-      toast.success("Login realizado com sucesso!");
-      if (onLogin) onLogin(userCred.user.email);
-      window.location.reload();
+
+      try {
+        const userDocRef = doc(db, "usuarios", userCred.user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+          console.error("Documento do usuário não encontrado no Firestore");
+          await signOut(auth);
+          toast.error("Erro ao verificar permissões. Usuário não encontrado.");
+          setEmail("");
+          setSenha("");
+          setLoading(false);
+          return;
+        }
+
+        const userData = userDocSnap.data();
+        console.log("Dados do usuário do Firestore:", userData);
+        console.log(
+          "funcaoId recebido:",
+          userData?.funcaoId,
+          "tipo:",
+          typeof userData?.funcaoId
+        );
+
+        const funcaoIdNumero =
+          userData?.funcaoId != null ? Number(userData.funcaoId) : null;
+
+        if (funcaoIdNumero !== 2) {
+          // Usuário não é gestor, fazer logout e mostrar erro
+          console.log(
+            "Acesso negado - funcaoId:",
+            funcaoIdNumero,
+            "esperado: 2"
+          );
+          console.log("UserData completo:", JSON.stringify(userData, null, 2));
+          await signOut(auth);
+          toast.error(
+            "Acesso negado. Apenas gestores podem acessar o sistema."
+          );
+          setEmail("");
+          setSenha("");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Login autorizado - funcaoId:", funcaoIdNumero);
+
+        // Usuário é gestor, continuar com o login
+        setEmail("");
+        setSenha("");
+        toast.success("Login realizado com sucesso!");
+        if (onLogin) onLogin(userCred.user.email);
+      } catch (employeeError) {
+        // Erro ao buscar dados do funcionário
+        await signOut(auth);
+        console.error("Erro ao buscar dados do funcionário:", employeeError);
+        toast.error("Erro ao verificar permissões. Tente novamente.");
+        setEmail("");
+        setSenha("");
+      }
     } catch (error) {
-      if (error.code === "auth/user-not-found") {
-        toast.error("Usuário não encontrado");
-      } else if (error.code === "auth/wrong-password") {
-        toast.error("Senha incorreta");
-      } else if (error.code === "auth/invalid-email") {
+      if (error.code === "auth/invalid-email") {
         toast.error("Email inválido");
-      } else if (error.code === "auth/invalid-credential") {
-        toast.error("Email ou senha incorretos");
       } else if (error.code === "auth/too-many-requests") {
         toast.error("Muitas tentativas. Tente novamente mais tarde");
-      } else {
-        toast.error(error.message || "Erro ao fazer login");
+      } else if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        toast.error("Email ou senha incorretos"); } else {
+        toast.error("Erro ao fazer login. Tente novamente.");
       }
     } finally {
       setLoading(false);
@@ -52,7 +108,9 @@ export default function Login({ onLogin }) {
               />
             </svg>
           </div>
-          <h1 className="text-[#002a45] text-xl font-semibold">CodCoz - Sistema de Gestão</h1>
+          <h1 className="text-[#002a45] text-xl font-semibold">
+            CodCoz - Sistema de Gestão
+          </h1>
           <p className="text-[#666666] mt-2 text-sm">Login para Gestores</p>
         </div>
 
@@ -95,7 +153,14 @@ export default function Login({ onLogin }) {
         </form>
 
         <p className="text-center text-sm text-[#999999] mt-6">
-          Sistema de Gestão CodCoz © 2025
+          <a
+            href="https://codcoz-web-cadastro.onrender.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#002a45] hover:text-[#003a5f] hover:underline transition-colors"
+          >
+            Cadastre sua empresa
+          </a>
         </p>
       </div>
     </div>
