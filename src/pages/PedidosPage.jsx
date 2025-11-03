@@ -5,10 +5,17 @@ import { Dialog, DialogContent } from "../components/ui/Dialog";
 import { Upload, X, Check } from "lucide-react";
 import { toast } from "sonner";
 
+const API_URL = "https://codcoz-xml-import.onrender.com/read_xml";
+const API_INSERT_URL = "https://codcoz-xml-import.onrender.com/insert_xml";
+
 export default function PedidosPage({ empresaId }) {
+  const currentEmpresaId = empresaId || 1;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Selecionar, 2: Revisar, 3: Finalizar
   const [selectedFile, setSelectedFile] = useState(null);
+  const [xmlData, setXmlData] = useState(null); // Novo estado para os dados do XML
+  const [isLoading, setIsLoading] = useState(false); // Novo estado para o loading
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -21,15 +28,91 @@ export default function PedidosPage({ empresaId }) {
     setIsModalOpen(true);
   };
 
+  const sendXmlToApi = async () => {
+    if (!selectedFile) {
+      toast.error("Nenhum arquivo selecionado.");
+      return;
+    }
+
+    setIsLoading(true);
+    setXmlData(null); // Limpa dados anteriores
+
+    const formData = new FormData();
+    // A chave 'file' é a que a API espera para o arquivo XML
+    formData.append("file", selectedFile);
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: formData,
+        // O cabeçalho 'Content-Type' é automaticamente definido como 'multipart/form-data'
+        // pelo navegador quando você usa um objeto FormData, não precisa ser setado manualmente.
+      });
+
+      if (!response.ok) {
+        // Tenta ler a mensagem de erro do corpo da resposta, se disponível
+        const errorText = await response.text();
+        throw new Error(
+          `Erro na requisição: ${response.status} - ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+      setXmlData(data);
+      setCurrentStep(2); // Avança para o Passo 2 (Revisar)
+    } catch (error) {
+      console.error("Erro ao processar XML:", error);
+      toast.error(`Falha na importação do XML: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const insertXmlToApi = async () => {
+    setIsLoading(true);
+
+    const formData = new FormData();
+    // 1. Anexa o arquivo XML
+    formData.append("file", selectedFile);
+    // 2. Anexa o empresa_id (valor 1, conforme solicitado)
+    formData.append("empresa_id", currentEmpresaId.toString());
+
+    try {
+      const response = await fetch(API_INSERT_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Erro na requisição: ${response.status} - ${errorText}`
+        );
+      }
+
+      // Se a API retornar sucesso (status 200/201), avança para o Passo 3
+      setCurrentStep(3);
+    } catch (error) {
+      console.error("Erro ao inserir XML:", error);
+      toast.error(`Falha na inserção do XML: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleStepContinue = () => {
     if (currentStep === 1) {
-      setCurrentStep(2);
+      // No Passo 1, ao clicar em "Continuar", chamamos a API
+      sendXmlToApi();
     } else if (currentStep === 2) {
-      setCurrentStep(3);
+      // No Passo 2, se os dados estiverem revisados, avança para o Passo 3
+      insertXmlToApi();
     } else {
+      // No Passo 3, finaliza
       setIsModalOpen(false);
       setCurrentStep(1);
       setSelectedFile(null);
+      setXmlData(null);
       toast.success("Importação concluída com sucesso!");
     }
   };
@@ -37,6 +120,10 @@ export default function PedidosPage({ empresaId }) {
   const handleStepBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      // Se voltar do Passo 2 para o 1, limpa os dados do XML
+      if (currentStep === 2) {
+        setXmlData(null);
+      }
     }
   };
 
@@ -48,14 +135,18 @@ export default function PedidosPage({ empresaId }) {
 
   return (
     <div>
-      <h1 className="text-[#333333] mb-6 text-2xl font-semibold">Pedidos e Notas Fiscais</h1>
+      <h1 className="text-[#333333] mb-6 text-2xl font-semibold">
+        Pedidos e Notas Fiscais
+      </h1>
 
       <Card className="p-6 mb-6">
-        <h2 className="text-[#333333] mb-4 font-semibold">Importar XML de Nota Fiscal</h2>
+        <h2 className="text-[#333333] mb-4 font-semibold">
+          Importar XML de Nota Fiscal
+        </h2>
         <p className="text-[#666666] mb-4">
           Importe arquivos XML de notas fiscais recebidas de fornecedores.
         </p>
-        <Button 
+        <Button
           onClick={handleImportClick}
           className="bg-[#002a45] hover:bg-[#003a5f]"
         >
@@ -65,7 +156,9 @@ export default function PedidosPage({ empresaId }) {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-[#333333] mb-4 font-semibold">Notas Fiscais Importadas</h2>
+        <h2 className="text-[#333333] mb-4 font-semibold">
+          Notas Fiscais Importadas
+        </h2>
         <p className="text-center text-[#666666] py-8">
           Nenhuma nota fiscal importada ainda.
         </p>
@@ -80,6 +173,7 @@ export default function PedidosPage({ empresaId }) {
                 setIsModalOpen(false);
                 setCurrentStep(1);
                 setSelectedFile(null);
+                setXmlData(null); // Limpa dados ao fechar
               }}
               className="absolute right-0 top-0 text-[#666666] hover:text-[#333333]"
             >
@@ -105,10 +199,14 @@ export default function PedidosPage({ empresaId }) {
                         className={`absolute left-0 h-0.5 ${
                           step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
                         }`}
-                        style={{ width: 'calc(50% - 20px)', top: '50%', transform: 'translateY(-50%)' }}
+                        style={{
+                          width: "calc(50% - 20px)",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                        }}
                       />
                     )}
-                    
+
                     {/* Círculo */}
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold border-2 relative z-10 ${
@@ -123,18 +221,22 @@ export default function PedidosPage({ empresaId }) {
                         step.number
                       )}
                     </div>
-                    
+
                     {/* Linha depois do círculo */}
                     {index < steps.length - 1 && (
                       <div
                         className={`absolute right-0 h-0.5 ${
                           step.completed ? "bg-[#002a45]" : "bg-[#ebebeb]"
                         }`}
-                        style={{ width: 'calc(50% - 20px)', top: '50%', transform: 'translateY(-50%)' }}
+                        style={{
+                          width: "calc(50% - 20px)",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                        }}
                       />
                     )}
                   </div>
-                  
+
                   {/* Texto do step */}
                   <p
                     className={`text-sm font-medium text-center ${
@@ -191,15 +293,82 @@ export default function PedidosPage({ empresaId }) {
                   <h3 className="text-lg font-semibold text-[#333333] mb-4">
                     Revisar Dados
                   </h3>
-                  {/* Placeholder para produtos do XML */}
-                  <div className="border border-[#ebebeb] rounded-lg overflow-hidden">
-                    <div className="bg-[#f8f9fa] p-4 border-b border-[#ebebeb]">
-                      <h4 className="font-semibold text-[#333333]">Produtos</h4>
+                  {isLoading && (
+                    <div className="text-center py-8">
+                      <p className="text-[#002a45] font-semibold">
+                        Processando XML... Aguarde.
+                      </p>
                     </div>
-                    <div className="p-4 text-center text-[#666666]">
-                      Aguardando dados do XML...
+                  )}
+                  {!isLoading && xmlData && (
+                    <div className="space-y-4">
+                      <div className="border border-[#ebebeb] rounded-lg p-4">
+                        <h4 className="font-semibold text-[#333333] mb-2">
+                          Detalhes da Nota Fiscal
+                        </h4>
+                        <p className="text-sm text-[#666666]">
+                          <strong>ID NFe:</strong> {xmlData.id_nfe}
+                        </p>
+                        <p className="text-sm text-[#666666]">
+                          <strong>Data de Emissão:</strong>{" "}
+                          {new Date(xmlData.data_emissao).toLocaleDateString(
+                            "pt-BR"
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="border border-[#ebebeb] rounded-lg overflow-hidden">
+                        <div className="bg-[#f8f9fa] p-4 border-b border-[#ebebeb]">
+                          <h4 className="font-semibold text-[#333333]">
+                            Produtos ({xmlData.produtos.length})
+                          </h4>
+                        </div>
+                        <div className="p-4">
+                          {xmlData.produtos.map((produto, index) => (
+                            <div
+                              key={index}
+                              className="mb-4 p-3 border-b last:border-b-0"
+                            >
+                              <p className="font-medium text-[#333333]">
+                                {produto.nome_produto}
+                              </p>
+                              <div className="grid grid-cols-2 gap-1 text-sm text-[#666666]">
+                                <p>
+                                  <strong>EAN:</strong> {produto.ean}
+                                </p>
+                                <p>
+                                  <strong>Quantidade:</strong>{" "}
+                                  {produto.quantidade} {produto.unidade_medida}
+                                </p>
+                                <p>
+                                  <strong>Valor Unitário:</strong> R${" "}
+                                  {parseFloat(produto.valor_unitario).toFixed(
+                                    2
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>Valor Total:</strong> R${" "}
+                                  {parseFloat(produto.valor_total).toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {!isLoading && !xmlData && (
+                    <div className="border border-[#ebebeb] rounded-lg overflow-hidden">
+                      <div className="bg-[#f8f9fa] p-4 border-b border-[#ebebeb]">
+                        <h4 className="font-semibold text-[#333333]">
+                          Produtos
+                        </h4>
+                      </div>
+                      <div className="p-4 text-center text-[#666666]">
+                        Aguardando dados do XML...
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -226,16 +395,23 @@ export default function PedidosPage({ empresaId }) {
                   onClick={handleStepBack}
                   variant="outline"
                   className="border-[#ebebeb] text-[#333333] hover:bg-[#ebebeb]"
-                  disabled={currentStep === 1}
+                  disabled={currentStep === 1 || isLoading}
                 >
                   Voltar
                 </Button>
                 <Button
                   onClick={handleStepContinue}
                   className="bg-[#002a45] hover:bg-[#003a5f]"
-                  disabled={currentStep === 1 && !selectedFile}
+                  disabled={
+                    (currentStep === 1 && (!selectedFile || isLoading)) ||
+                    (currentStep === 2 && !xmlData)
+                  }
                 >
-                  {currentStep === 2 ? "Finalizar" : "Continuar"}
+                  {isLoading
+                    ? "Carregando..."
+                    : currentStep === 2
+                    ? "Finalizar"
+                    : "Continuar"}
                 </Button>
               </div>
             )}
@@ -256,4 +432,3 @@ export default function PedidosPage({ empresaId }) {
     </div>
   );
 }
-
