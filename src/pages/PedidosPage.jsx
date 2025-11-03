@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "../components/ui/Card";
+import { pythonAPI } from "../lib/api";
 import { Button } from "../components/ui/Button";
 import { Dialog, DialogContent } from "../components/ui/Dialog";
 import { Upload, X, Check } from "lucide-react";
@@ -12,11 +13,30 @@ export default function PedidosPage({ empresaId }) {
 
   const currentEmpresaId = empresaId || 1;
 
+  const [pedidos, setPedidos] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Selecionar, 2: Revisar, 3: Finalizar
   const [selectedFile, setSelectedFile] = useState(null);
   const [xmlData, setXmlData] = useState(null); // Novo estado para os dados do XML
   const [isLoading, setIsLoading] = useState(false); // Novo estado para o loading
+  const [loading, setLoading] = useState({
+    pedidos: true,
+  });
+
+  useEffect(() => {
+    pythonAPI
+      .getOrders(empresaId)
+      .then((data) => {
+        const orders = data.pedidos;
+        setPedidos(Array.isArray(orders) ? orders : []);
+        setLoading((prev) => ({ ...prev, pedidos: false }));
+      })
+      .catch(() => {
+        setLoading((prev) => ({ ...prev, pedidos: false }));
+      });
+  }, [empresaId]);
+
+
 
 
   const handleFileSelect = (event) => {
@@ -151,9 +171,46 @@ export default function PedidosPage({ empresaId }) {
 
       <Card className="p-6">
         <h2 className="text-[#333333] mb-4 font-semibold">Notas Fiscais Importadas</h2>
-        <p className="text-center text-[#666666] py-8">
+
+        <>
+          {loading.pedidos ? (
+            <p className="text-center text-[#666666] py-8">
+              Carregando pedidos...
+            </p>
+          ) : pedidos.length === 0 ? (
+            <p className="text-center text-[#666666] py-8">
+              Nenhuma nota fiscal importada ainda.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pedidos.map((pedido) => (
+                <div
+                  key={pedido.id}
+                  className="p-4 border border-[#ebebeb] rounded-lg hover:border-[#002a45] transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="text-[#333333] font-semibold">
+                      {pedido.descricao || "-"}
+                    </p>
+
+                    <span className="px-2 py-1 text-xs bg-[#002a45]/10 text-[#002a45] rounded">
+                      {pedido.data_compra.slice(0, 10) || "-"}
+                    </span>
+
+                  </div>
+                  <p className="text-xs text-[#666666] mb-2">
+                    {pedido.cod_nota_fiscal || "Sem nota fiscal"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+
+
+        {/* <p className="text-center text-[#666666] py-8">
           Nenhuma nota fiscal importada ainda.
-        </p>
+        </p> */}
       </Card>
 
       {/* Modal de Importação */}

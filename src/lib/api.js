@@ -6,6 +6,8 @@ const MONGO_API_URL = isDevelopment
   ? "/api/mongo"
   : "https://codcoz-api-mongo-eemr.onrender.com";
 
+const PYTHON_XML_API_URL = "https://codcoz-xml-import.onrender.com";
+
 async function fetchWithTimeout(url, options = {}) {
   const { timeout = 10000, ...fetchOptions } = options;
 
@@ -303,6 +305,21 @@ export const mongoAPI = {
     return await response.json();
   },
 };
+
+export const pythonAPI = {
+  async getOrders(empresaId) {
+    try {
+      const response = await fetchWithTimeout(
+        `${PYTHON_XML_API_URL}/read_pedidos/${empresaId}`
+      );
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch {
+      return [];
+    }
+  }
+}
 
 export async function checkAPIHealth() {
   const checks = { postgres: false, mongo: false };
