@@ -132,7 +132,7 @@ export default function ProdutosPage({ empresaId }) {
             {produtosVencendo.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-yellow-700 mb-3">
-                  ⏰ Vencendo em breve
+                  Vencendo em breve
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   {produtosVencendo.map((produto) => (

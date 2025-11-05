@@ -323,7 +323,7 @@ export default function TarefasPage({ empresaId }) {
                 Criar Tarefa
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
               <DialogHeader>
                 <DialogTitle>Nova Tarefa</DialogTitle>
               </DialogHeader>
@@ -342,7 +342,7 @@ export default function TarefasPage({ empresaId }) {
                           tipoTarefaId: e.target.value,
                         });
                       }}
-                      className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                      className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer"
                       required
                     >
                       <option value="">Selecione um tipo</option>
@@ -367,7 +367,7 @@ export default function TarefasPage({ empresaId }) {
                           ingredienteId: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                      className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[#ebebeb]"
                       required
                       disabled={loadingData}
                     >
@@ -396,13 +396,13 @@ export default function TarefasPage({ empresaId }) {
                         responsavelId: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                    className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[#ebebeb]"
                     required
                     disabled={loadingData}
                   >
                     <option value="">Selecione um funcionário</option>
                     {funcionarios
-                      .filter((f) => f.status === "ATIVO" || !f.status)
+                      .filter((f) => f.status === "ATIVO" || f.status === "Ativo" || !f.status)
                       .map((func) => (
                         <option key={func.id} value={func.id}>
                           {`${func.nome || ""} ${
@@ -508,7 +508,7 @@ export default function TarefasPage({ empresaId }) {
                 onChange={(e) =>
                   setFiltros({ ...filtros, situacao: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer"
               >
                 <option value="">Todas</option>
                 <option value="PENDENTE">Pendente</option>
@@ -523,7 +523,7 @@ export default function TarefasPage({ empresaId }) {
                 onChange={(e) =>
                   setFiltros({ ...filtros, tipoTarefa: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer"
               >
                 <option value="">Todos</option>
                 {Array.from(
@@ -543,7 +543,7 @@ export default function TarefasPage({ empresaId }) {
                 onChange={(e) =>
                   setFiltros({ ...filtros, ingrediente: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-[#ebebeb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#002a45]"
+                className="custom-select w-full px-3 py-2 border border-[#ebebeb] rounded-lg bg-white text-[#333333] focus:outline-none transition-all duration-200 cursor-pointer"
               >
                 <option value="">Todos</option>
                 {Array.from(
