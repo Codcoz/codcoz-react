@@ -2,6 +2,12 @@
 
 Sistema completo de gestão empresarial para estabelecimentos de alimentação e gastronomia, desenvolvido com React e Vite.
 
+## 🌐 Acesse o site web
+
+[CodCoz](https://meusite.onrender.com)
+
+
+
 ## 📋 Índice
 
 - [Sobre o Projeto](#sobre-o-projeto)
