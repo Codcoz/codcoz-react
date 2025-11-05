@@ -4,7 +4,7 @@ Sistema completo de gestão empresarial para estabelecimentos de alimentação e
 
 ## 🌐 Acesse o site web
 
-[CodCoz](https://meusite.onrender.com)
+[CodCoz](https://codcoz-react.onrender.com/)
 
 
 
