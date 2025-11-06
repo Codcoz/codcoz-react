@@ -20,21 +20,13 @@ export default function Home({ empresaId, onNavigate }) {
     produtosProximoVencimento: 0,
     produtosEstoqueBaixo: 0,
   });
-  const [selectedFile, setSelectedFile] = useState(null);
   const [proximasTarefas, setProximasTarefas] = useState([]);
   const [loadingTarefas, setLoadingTarefas] = useState(true);
   const [atividadesRecentes, setAtividadesRecentes] = useState([]);
   const [loadingAtividades, setLoadingAtividades] = useState(true);
 
-  const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
   const handleImportClick = () => {
-    document.getElementById("xml-file-input").click();
+    onNavigate?.("xml");
   };
 
   useEffect(() => {
@@ -310,13 +302,6 @@ export default function Home({ empresaId, onNavigate }) {
               Importe os arquivos XML recebidos de fornecedores para manter o
               controle atualizado de todas as notas fiscais.
             </p>
-            <input
-              type="file"
-              id="xml-file-input"
-              accept=".xml"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
             <Button
               onClick={handleImportClick}
               className="bg-[#002a45] hover:bg-[#003a5f]"
@@ -324,11 +309,6 @@ export default function Home({ empresaId, onNavigate }) {
               <FileText className="w-4 h-4 mr-2" />
               Importar
             </Button>
-            {selectedFile && (
-              <p className="mt-3 text-sm text-[#666666]">
-                Arquivo selecionado: {selectedFile.name}
-              </p>
-            )}
           </Card>
 
           {/* Recent Activities */}
